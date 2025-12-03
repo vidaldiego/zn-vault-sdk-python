@@ -15,16 +15,19 @@ class AuthResult:
     expires_in: int
     token_type: str = "Bearer"
     requires_totp: bool = False
+    user: "User | None" = None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "AuthResult":
         """Create from API response dictionary."""
+        user_data = data.get("user")
         return cls(
             access_token=data.get("accessToken", ""),
             refresh_token=data.get("refreshToken", ""),
             expires_in=data.get("expiresIn", 3600),
             token_type=data.get("tokenType", "Bearer"),
             requires_totp=data.get("requiresTotp", False),
+            user=User.from_dict(user_data) if user_data else None,
         )
 
 
@@ -38,10 +41,12 @@ class User:
     role: str | None = None
     tenant_id: str | None = None
     totp_enabled: bool = False
+    status: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
     last_login: datetime | None = None
     permissions: list[str] = field(default_factory=list)
+    roles: list[dict[str, Any]] = field(default_factory=list)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "User":
@@ -51,12 +56,14 @@ class User:
             username=data.get("username", ""),
             email=data.get("email"),
             role=data.get("role"),
-            tenant_id=data.get("tenantId"),
-            totp_enabled=data.get("totpEnabled", False),
+            tenant_id=data.get("tenantId", data.get("tenant_id")),
+            totp_enabled=data.get("totp_enabled", data.get("totpEnabled", False)),
+            status=data.get("status"),
             created_at=_parse_datetime(data.get("createdAt")),
             updated_at=_parse_datetime(data.get("updatedAt")),
             last_login=_parse_datetime(data.get("lastLogin")),
             permissions=data.get("permissions", []),
+            roles=data.get("roles", []),
         )
 
 
