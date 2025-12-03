@@ -190,3 +190,40 @@ class AuthClient:
             code: TOTP code for verification.
         """
         self._http.post("/auth/2fa/disable", {"code": code})
+
+    def rotate_api_key(self, key_id: str) -> ApiKey:
+        """
+        Rotate an API key by ID.
+
+        This creates a new API key with the same configuration and revokes the old one.
+
+        Args:
+            key_id: The ID of the API key to rotate.
+
+        Returns:
+            The new API key (includes the key value only on creation).
+        """
+        response = self._http.post(f"/auth/api-keys/{key_id}/rotate", {})
+        return ApiKey.from_dict(response)
+
+    def get_current_api_key(self) -> ApiKey:
+        """
+        Get information about the current API key (when authenticated via API key).
+
+        Returns:
+            The current API key information.
+        """
+        response = self._http.get("/auth/api-keys/self")
+        return ApiKey.from_dict(response)
+
+    def rotate_current_api_key(self) -> ApiKey:
+        """
+        Rotate the current API key (self-rotation when authenticated via API key).
+
+        This creates a new API key with the same configuration and revokes the current one.
+
+        Returns:
+            The new API key (includes the key value only on creation).
+        """
+        response = self._http.post("/auth/api-keys/self/rotate", {})
+        return ApiKey.from_dict(response)

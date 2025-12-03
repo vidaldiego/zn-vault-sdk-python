@@ -36,6 +36,7 @@ src/znvault/models/kms.py
 src/znvault/models/secrets.py
 src/znvault/secrets/__init__.py
 src/znvault/secrets/client.py
+tests/test_auth.py
 tests/test_client.py
 tests/test_config.py
 tests/test_exceptions.py
