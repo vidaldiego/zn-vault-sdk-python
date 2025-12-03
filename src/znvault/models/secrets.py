@@ -25,8 +25,6 @@ class Secret:
     type: SecretType
     version: int
     tags: list[str] = field(default_factory=list)
-    env: str | None = None
-    service: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
     expires_at: datetime | None = None
@@ -50,8 +48,6 @@ class Secret:
             type=secret_type,
             version=data.get("version", 1),
             tags=data.get("tags", []),
-            env=data.get("env"),
-            service=data.get("service"),
             created_at=_parse_datetime(data.get("createdAt")),
             updated_at=_parse_datetime(data.get("updatedAt")),
             expires_at=_parse_datetime(data.get("expiresAt")),
@@ -103,28 +99,20 @@ class CreateSecretRequest:
     """Request to create a secret."""
 
     alias: str
-    tenant: str
     type: SecretType
     data: dict[str, Any]
     tags: list[str] = field(default_factory=list)
-    env: str | None = None
-    service: str | None = None
     ttl_until: datetime | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to API request dictionary."""
         result: dict[str, Any] = {
             "alias": self.alias,
-            "tenant": self.tenant,
             "type": self.type.value,
             "data": self.data,
         }
         if self.tags:
             result["tags"] = self.tags
-        if self.env:
-            result["env"] = self.env
-        if self.service:
-            result["service"] = self.service
         if self.ttl_until:
             result["ttlUntil"] = self.ttl_until.isoformat()
         return result
@@ -149,9 +137,6 @@ class UpdateSecretRequest:
 class SecretFilter:
     """Filter options for listing secrets."""
 
-    tenant: str | None = None
-    env: str | None = None
-    service: str | None = None
     type: SecretType | None = None
     tags: list[str] | None = None
     limit: int = 100
@@ -164,12 +149,6 @@ class SecretFilter:
             "limit": self.limit,
             "offset": self.offset,
         }
-        if self.tenant:
-            params["tenant"] = self.tenant
-        if self.env:
-            params["env"] = self.env
-        if self.service:
-            params["service"] = self.service
         if self.type:
             params["type"] = self.type.value
         if self.tags:

@@ -66,7 +66,7 @@ class RolesClient:
         params: dict[str, Any] = {
             "limit": limit,
             "offset": offset,
-            "includeSystem": include_system,
+            "includeSystem": "true" if include_system else "false",
         }
         if tenant_id:
             params["tenantId"] = tenant_id
@@ -103,7 +103,7 @@ class RolesClient:
         if permissions is not None:
             data["permissions"] = permissions
 
-        response = self._http.put(f"/v1/roles/{role_id}", data)
+        response = self._http.patch(f"/v1/roles/{role_id}", data)
         return Role.from_dict(response)
 
     def delete(self, role_id: str) -> None:

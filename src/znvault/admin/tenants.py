@@ -42,6 +42,9 @@ class TenantsClient:
             The tenant information.
         """
         response = self._http.get(f"/v1/tenants/{tenant_id}")
+        # API returns {success: true, data: {...}}
+        if isinstance(response, dict) and "data" in response:
+            return Tenant.from_dict(response["data"])
         return Tenant.from_dict(response)
 
     def list(self, limit: int = 100, offset: int = 0) -> list[Tenant]:
@@ -92,7 +95,7 @@ class TenantsClient:
         if settings:
             data["settings"] = settings
 
-        response = self._http.put(f"/v1/tenants/{tenant_id}", data)
+        response = self._http.patch(f"/v1/tenants/{tenant_id}", data)
         return Tenant.from_dict(response)
 
     def delete(self, tenant_id: str) -> None:

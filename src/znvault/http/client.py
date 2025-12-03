@@ -76,13 +76,20 @@ class HttpClient:
         """Get current refresh token."""
         return self._refresh_token
 
-    def _get_headers(self) -> dict[str, str]:
-        """Get request headers including authentication."""
+    def _get_headers(self, include_content_type: bool = True) -> dict[str, str]:
+        """Get request headers including authentication.
+
+        Args:
+            include_content_type: Whether to include Content-Type header.
+                                  Set to False for requests without body (DELETE, some GETs).
+        """
         headers: dict[str, str] = {
-            "Content-Type": "application/json",
             "Accept": "application/json",
             **self.config.headers,
         }
+
+        if include_content_type:
+            headers["Content-Type"] = "application/json"
 
         if self._access_token:
             headers["Authorization"] = f"Bearer {self._access_token}"
@@ -192,7 +199,7 @@ class HttpClient:
         url = f"{self.config.base_url}{path}"
         response = self._session.delete(
             url,
-            headers=self._get_headers(),
+            headers=self._get_headers(include_content_type=False),
             timeout=self.config.timeout,
             verify=self._get_verify(),
         )

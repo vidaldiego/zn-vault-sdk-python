@@ -136,7 +136,6 @@ class TestSecretModels:
         """Test CreateSecretRequest serialization."""
         request = CreateSecretRequest(
             alias="api/prod/key",
-            tenant="acme",
             type=SecretType.CREDENTIAL,
             data={"key": "value"},
             tags=["test"],
@@ -144,7 +143,6 @@ class TestSecretModels:
         result = request.to_dict()
 
         assert result["alias"] == "api/prod/key"
-        assert result["tenant"] == "acme"
         assert result["type"] == "credential"
         assert result["data"]["key"] == "value"
         assert result["tags"] == ["test"]
@@ -152,16 +150,14 @@ class TestSecretModels:
     def test_secret_filter_to_params(self) -> None:
         """Test SecretFilter query param generation."""
         filter = SecretFilter(
-            tenant="acme",
-            env="production",
             type=SecretType.CREDENTIAL,
+            tags=["test"],
             limit=50,
         )
         params = filter.to_params()
 
-        assert params["tenant"] == "acme"
-        assert params["env"] == "production"
         assert params["type"] == "credential"
+        assert params["tags"] == "test"
         assert params["limit"] == 50
 
 

@@ -126,7 +126,7 @@ class PoliciesClient:
         if priority is not None:
             data["priority"] = priority
 
-        response = self._http.put(f"/v1/policies/{policy_id}", data)
+        response = self._http.patch(f"/v1/policies/{policy_id}", data)
         return Policy.from_dict(response)
 
     def delete(self, policy_id: str) -> None:

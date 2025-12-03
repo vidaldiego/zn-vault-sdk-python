@@ -29,7 +29,7 @@ class UsersClient:
         Returns:
             The created user.
         """
-        response = self._http.post("/v1/admin/users", request.to_dict())
+        response = self._http.post("/v1/users", request.to_dict())
         return User.from_dict(response.get("user", response))
 
     def get(self, user_id: str) -> User:
@@ -42,7 +42,7 @@ class UsersClient:
         Returns:
             The user information.
         """
-        response = self._http.get(f"/v1/admin/users/{user_id}")
+        response = self._http.get(f"/v1/users/{user_id}")
         return User.from_dict(response.get("user", response))
 
     def list(
@@ -66,7 +66,7 @@ class UsersClient:
         if tenant_id:
             params["tenantId"] = tenant_id
 
-        response = self._http.get("/v1/admin/users", params)
+        response = self._http.get("/v1/users", params)
 
         # API returns {admins: [...]} or {users: [...]}
         users = response.get("admins", response.get("users", response.get("data", [])))
@@ -99,7 +99,7 @@ class UsersClient:
         if tenant_id:
             data["tenantId"] = tenant_id
 
-        response = self._http.put(f"/v1/admin/users/{user_id}", data)
+        response = self._http.put(f"/v1/users/{user_id}", data)
         return User.from_dict(response.get("user", response))
 
     def delete(self, user_id: str) -> None:
@@ -109,7 +109,7 @@ class UsersClient:
         Args:
             user_id: The user ID to delete.
         """
-        self._http.delete(f"/v1/admin/users/{user_id}")
+        self._http.delete(f"/v1/users/{user_id}")
 
     def reset_password(self, user_id: str, new_password: str) -> None:
         """
@@ -119,7 +119,7 @@ class UsersClient:
             user_id: The user ID.
             new_password: The new password.
         """
-        self._http.post(f"/v1/admin/users/{user_id}/reset-password", {
+        self._http.post(f"/v1/users/{user_id}/reset-password", {
             "password": new_password,
         })
 
@@ -131,7 +131,7 @@ class UsersClient:
             user_id: The user ID.
             role_id: The role ID to assign.
         """
-        self._http.post(f"/v1/admin/users/{user_id}/roles", {"roleId": role_id})
+        self._http.post(f"/v1/users/{user_id}/roles", {"roleId": role_id})
 
     def remove_role(self, user_id: str, role_id: str) -> None:
         """
@@ -141,4 +141,4 @@ class UsersClient:
             user_id: The user ID.
             role_id: The role ID to remove.
         """
-        self._http.delete(f"/v1/admin/users/{user_id}/roles/{role_id}")
+        self._http.delete(f"/v1/users/{user_id}/roles/{role_id}")

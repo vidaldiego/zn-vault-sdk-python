@@ -55,19 +55,18 @@ class SecretsClient:
         response = self._http.get(f"/v1/secrets/{secret_id}/meta")
         return Secret.from_dict(response)
 
-    def get_by_alias(self, tenant: str, alias: str) -> Secret:
+    def get_by_alias(self, alias: str) -> Secret:
         """
-        Get secret metadata by tenant and alias.
+        Get secret metadata by alias.
 
         Args:
-            tenant: The tenant ID.
             alias: The secret alias.
 
         Returns:
             The secret metadata.
         """
         encoded_alias = quote(alias, safe="")
-        response = self._http.get(f"/v1/secrets/{tenant}/{encoded_alias}")
+        response = self._http.get(f"/v1/secrets/alias/{encoded_alias}")
         return Secret.from_dict(response)
 
     def decrypt(self, secret_id: str, version: int | None = None) -> SecretData:
@@ -82,8 +81,8 @@ class SecretsClient:
             The decrypted secret data.
         """
         path = f"/v1/secrets/{secret_id}/decrypt"
-        params = {"version": version} if version else None
-        response = self._http.get(path, params)
+        body = {"version": version} if version else {}
+        response = self._http.post(path, body)
         return SecretData.from_dict(response)
 
     def update(self, secret_id: str, request: UpdateSecretRequest) -> Secret:
@@ -160,7 +159,6 @@ class SecretsClient:
     def upload_file(
         self,
         alias: str,
-        tenant: str,
         file_path: str | Path,
         tags: list[str] | None = None,
     ) -> Secret:
@@ -169,7 +167,6 @@ class SecretsClient:
 
         Args:
             alias: The secret alias.
-            tenant: The tenant ID.
             file_path: Path to the file to upload.
             tags: Optional tags for the secret.
 
@@ -197,7 +194,6 @@ class SecretsClient:
 
         request = CreateSecretRequest(
             alias=alias,
-            tenant=tenant,
             type=SecretType.OPAQUE,
             data={
                 "filename": path.name,

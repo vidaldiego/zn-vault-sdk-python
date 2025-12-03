@@ -81,7 +81,7 @@ class TestAuthClientApiKeys:
         result = auth_client.rotate_api_key("key-123")
 
         assert result.id == "key-456"
-        assert result.prefix == "znv_xyz"
+        assert result.key_prefix == "znv_xyz"
         mock_http.post.assert_called_once_with("/auth/api-keys/key-123/rotate", {})
 
     def test_get_current_api_key(self, auth_client, mock_http):
@@ -114,7 +114,7 @@ class TestAuthClientApiKeys:
         result = auth_client.rotate_current_api_key()
 
         assert result.id == "key-789"
-        assert result.prefix == "znv_new"
+        assert result.key_prefix == "znv_new"
         assert result.key == "znv_new123abc"
         mock_http.post.assert_called_once_with("/auth/api-keys/self/rotate", {})
 
@@ -128,14 +128,20 @@ class TestApiKeyRotationIntegration:
         from znvault.client import ZnVaultClient
 
         base_url = os.environ.get("ZN_VAULT_URL", "https://localhost:8443")
-        return ZnVaultClient.create(base_url, trust_self_signed=True)
+        return (
+            ZnVaultClient.builder()
+            .base_url(base_url)
+            .trust_self_signed(True)
+            .verify_ssl(False)
+            .build()
+        )
 
     @pytest.mark.integration
     def test_api_key_lifecycle(self, client):
         """Test full API key lifecycle: create, rotate, delete."""
         # Login first
         username = os.environ.get("ZN_VAULT_USER", "admin")
-        password = os.environ.get("ZN_VAULT_PASS", "admin123")
+        password = os.environ.get("ZN_VAULT_PASS", "Admin123456#")
         client.auth.login(username, password)
 
         # Create a key
@@ -164,7 +170,7 @@ class TestApiKeyRotationIntegration:
 
         # Login and create an API key
         username = os.environ.get("ZN_VAULT_USER", "admin")
-        password = os.environ.get("ZN_VAULT_PASS", "admin123")
+        password = os.environ.get("ZN_VAULT_PASS", "Admin123456#")
         client.auth.login(username, password)
 
         key_name = f"self-rotate-{int(time.time())}"
@@ -173,10 +179,13 @@ class TestApiKeyRotationIntegration:
         try:
             # Create a client with the API key
             base_url = os.environ.get("ZN_VAULT_URL", "https://localhost:8443")
-            api_key_client = ZnVaultClient.create(
-                base_url,
-                api_key=original.key,
-                trust_self_signed=True,
+            api_key_client = (
+                ZnVaultClient.builder()
+                .base_url(base_url)
+                .api_key(original.key)
+                .trust_self_signed(True)
+                .verify_ssl(False)
+                .build()
             )
 
             # Get current key info
