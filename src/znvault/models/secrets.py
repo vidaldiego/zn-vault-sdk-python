@@ -78,8 +78,13 @@ class SecretData:
 class SecretVersion:
     """Secret version history entry."""
 
+    id: int
     version: int
-    created_at: datetime | None
+    tenant: str | None = None
+    alias: str | None = None
+    type: str | None = None
+    tags: list[str] | None = None
+    created_at: datetime | None = None
     created_by: str | None = None
     checksum: str | None = None
 
@@ -87,9 +92,14 @@ class SecretVersion:
     def from_dict(cls, data: dict[str, Any]) -> "SecretVersion":
         """Create from API response dictionary."""
         return cls(
+            id=data.get("id", 0),
             version=data.get("version", 1),
-            created_at=_parse_datetime(data.get("createdAt")),
-            created_by=data.get("createdBy"),
+            tenant=data.get("tenant"),
+            alias=data.get("alias"),
+            type=data.get("type"),
+            tags=data.get("tags"),
+            created_at=_parse_datetime(data.get("created_at") or data.get("createdAt")),
+            created_by=data.get("created_by") or data.get("createdBy"),
             checksum=data.get("checksum"),
         )
 

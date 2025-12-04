@@ -139,7 +139,7 @@ class SecretsClient:
             List of secret versions.
         """
         response = self._http.get(f"/v1/secrets/{secret_id}/history")
-        versions = response if isinstance(response, list) else response.get("versions", [])
+        versions = response if isinstance(response, list) else response.get("history", [])
         return [SecretVersion.from_dict(v) for v in versions]
 
     def rotate(self, secret_id: str, new_data: dict[str, Any]) -> Secret:
