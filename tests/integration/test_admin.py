@@ -47,7 +47,8 @@ class TestUsersIntegration:
         self.created_user_ids.append(user.id)
 
         assert user.id is not None
-        assert user.username == username
+        # Server returns username with tenant prefix for tenant users
+        assert user.username == f"{TestConfig.DEFAULT_TENANT}/{username}"
 
         print(f"✓ Created user: {user.username}")
         print(f"  ID: {user.id}")
@@ -70,7 +71,8 @@ class TestUsersIntegration:
         user = self.client.users.get(created.id)
 
         assert user.id == created.id
-        assert user.username == username
+        # Server returns username with tenant prefix for tenant users
+        assert user.username == f"{TestConfig.DEFAULT_TENANT}/{username}"
 
         print(f"✓ Retrieved user: {user.username}")
 

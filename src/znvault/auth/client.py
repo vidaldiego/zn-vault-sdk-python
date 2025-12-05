@@ -24,19 +24,31 @@ class AuthClient:
         username: str,
         password: str,
         totp_code: str | None = None,
+        tenant: str | None = None,
     ) -> AuthResult:
         """
         Authenticate with username and password.
 
+        The username must include the tenant prefix in the format `tenant/username`
+        (e.g., "acme/admin"). This allows multiple tenants to have users with the
+        same username. Email addresses can also be used as username.
+
+        Alternatively, you can provide the `tenant` parameter separately, and the
+        SDK will format the username automatically.
+
         Args:
-            username: The username to authenticate with.
+            username: The username in format "tenant/username" or email address.
             password: The password to authenticate with.
             totp_code: Optional TOTP code if 2FA is enabled.
+            tenant: Optional tenant (if provided, will be prefixed to username).
 
         Returns:
             AuthResult containing access and refresh tokens.
         """
-        data = {"username": username, "password": password}
+        # If tenant is provided separately, format as "tenant/username"
+        full_username = f"{tenant}/{username}" if tenant else username
+
+        data = {"username": full_username, "password": password}
         if totp_code:
             data["totpCode"] = totp_code
 
@@ -47,6 +59,29 @@ class AuthClient:
         self._http.set_tokens(result.access_token, result.refresh_token)
 
         return result
+
+    def login_with_tenant(
+        self,
+        tenant: str,
+        username: str,
+        password: str,
+        totp_code: str | None = None,
+    ) -> AuthResult:
+        """
+        Authenticate with tenant and username as separate parameters.
+
+        Convenience method that formats the username as "tenant/username".
+
+        Args:
+            tenant: Tenant identifier (e.g., "acme").
+            username: Username within the tenant (e.g., "admin").
+            password: The password to authenticate with.
+            totp_code: Optional TOTP code if 2FA is enabled.
+
+        Returns:
+            AuthResult containing access and refresh tokens.
+        """
+        return self.login(username, password, totp_code, tenant)
 
     def refresh(self, refresh_token: str | None = None) -> AuthResult:
         """
