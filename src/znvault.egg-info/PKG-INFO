@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: znvault
-Version: 1.1.1
+Version: 1.2.1
 Summary: Python SDK for ZN-Vault secrets management
 Author-email: ZincWare Team <dev@zincware.io>
 License: Apache-2.0
