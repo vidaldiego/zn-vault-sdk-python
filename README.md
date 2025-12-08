@@ -169,6 +169,68 @@ secret = client.secrets.upload_file(
 client.secrets.download_file("secret-id", "/path/to/output.pem")
 ```
 
+### Keypair Generation and Public Key Publishing
+
+```python
+from znvault import GenerateKeypairRequest
+
+# Generate an Ed25519 keypair
+keypair = client.secrets.generate_keypair(
+    GenerateKeypairRequest(
+        algorithm="Ed25519",
+        alias="ssh/production/deploy-key",
+        tenant="acme",
+        comment="Production deployment key",
+        tags=["ssh", "deployment"]
+    )
+)
+
+# Access private and public keys
+print(f"Private key ID: {keypair.private_key.id}")
+print(f"Public key ID: {keypair.public_key.id}")
+print(f"Fingerprint: {keypair.public_key.fingerprint}")
+print(f"OpenSSH format: {keypair.public_key.public_key_openssh}")
+
+# Generate RSA keypair with custom key size
+rsa_keypair = client.secrets.generate_keypair(
+    GenerateKeypairRequest(
+        algorithm="RSA",
+        alias="ssh/production/rsa-key",
+        tenant="acme",
+        rsa_bits=4096,
+        publish_public_key=True  # Automatically publish the public key
+    )
+)
+
+# Generate ECDSA keypair
+ecdsa_keypair = client.secrets.generate_keypair(
+    GenerateKeypairRequest(
+        algorithm="ECDSA",
+        alias="ssh/production/ecdsa-key",
+        tenant="acme",
+        ecdsa_curve="P-384"
+    )
+)
+
+# Publish a public key (make it publicly accessible)
+result = client.secrets.publish(keypair.public_key.id)
+print(f"Public URL: {result.public_url}")
+print(f"Fingerprint: {result.fingerprint}")
+
+# Get a published public key (no authentication required)
+public_key = client.secrets.get_public_key("acme", "ssh/production/deploy-key")
+print(f"Algorithm: {public_key.algorithm}")
+print(f"Public key (PEM): {public_key.public_key_pem}")
+
+# List all published public keys for a tenant (no authentication required)
+public_keys = client.secrets.list_public_keys("acme")
+for key in public_keys:
+    print(f"{key.alias}: {key.fingerprint}")
+
+# Unpublish a public key (make it private again)
+client.secrets.unpublish(keypair.public_key.id)
+```
+
 ## KMS Operations
 
 ### Key Management

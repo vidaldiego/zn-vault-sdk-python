@@ -204,3 +204,19 @@ class HttpClient:
             verify=self._get_verify(),
         )
         return self._handle_response(response)
+
+    def get_unauthenticated(self, path: str, params: dict[str, Any] | None = None) -> Any:
+        """Make a GET request without authentication headers (for public endpoints)."""
+        url = f"{self.config.base_url}{path}"
+        headers: dict[str, str] = {
+            "Accept": "application/json",
+            **self.config.headers,
+        }
+        response = self._session.get(
+            url,
+            headers=headers,
+            params=params,
+            timeout=self.config.timeout,
+            verify=self._get_verify(),
+        )
+        return self._handle_response(response)
