@@ -44,6 +44,21 @@ from znvault.models.admin import (
 from znvault.models.audit import AuditEntry, AuditFilter, AuditVerifyResult
 from znvault.models.health import HealthStatus
 from znvault.models.common import Page
+from znvault.models.certificates import (
+    Certificate,
+    DecryptedCertificate,
+    StoreCertificateRequest,
+    UpdateCertificateRequest,
+    RotateCertificateRequest,
+    CertificateFilter,
+    CertificateStats,
+    CertificateAccessLogEntry,
+    CertificateListResponse,
+    CertificateType,
+    CertificatePurpose,
+    CertificateStatus,
+    CertificateKind,
+)
 
 __all__ = [
     # Auth
@@ -94,4 +109,18 @@ __all__ = [
     "HealthStatus",
     # Common
     "Page",
+    # Certificates
+    "Certificate",
+    "DecryptedCertificate",
+    "StoreCertificateRequest",
+    "UpdateCertificateRequest",
+    "RotateCertificateRequest",
+    "CertificateFilter",
+    "CertificateStats",
+    "CertificateAccessLogEntry",
+    "CertificateListResponse",
+    "CertificateType",
+    "CertificatePurpose",
+    "CertificateStatus",
+    "CertificateKind",
 ]

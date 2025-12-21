@@ -10,27 +10,27 @@ from znvault.client import ZnVaultClient
 class TestConfig:
     """Test configuration for integration tests."""
 
-    # Test server
-    BASE_URL = "https://localhost:8443"
+    # Test server - can be overridden with ZNVAULT_BASE_URL env var
+    BASE_URL = os.environ.get("ZNVAULT_BASE_URL", "https://localhost:8443")
 
-    # Test users
+    # Test users - can be overridden with ZNVAULT_USERNAME and ZNVAULT_PASSWORD env vars
     # Note: Username must be in format "tenant/username" for non-superadmin users.
     # Superadmin can omit tenant prefix. Email can also be used as username.
     class Users:
         # Superadmin - full access (no tenant prefix required)
-        SUPERADMIN_USERNAME = "admin"
-        SUPERADMIN_PASSWORD = "Admin123456#"
+        SUPERADMIN_USERNAME = os.environ.get("ZNVAULT_USERNAME", "admin")
+        SUPERADMIN_PASSWORD = os.environ.get("ZNVAULT_PASSWORD", "Admin123456#")
 
         # Tenant admin - manages tenant resources (requires tenant/username format)
-        TENANT_ADMIN_USERNAME = "zincapp/zincadmin"
-        TENANT_ADMIN_PASSWORD = "Admin123456#"
+        TENANT_ADMIN_USERNAME = os.environ.get("ZNVAULT_TENANT_ADMIN_USERNAME", "zincapp/zincadmin")
+        TENANT_ADMIN_PASSWORD = os.environ.get("ZNVAULT_TENANT_ADMIN_PASSWORD", "Admin123456#")
 
         # Regular user - limited access (requires tenant/username format)
-        REGULAR_USER_USERNAME = "zincapp/zincuser"
-        REGULAR_USER_PASSWORD = "Admin123456#"
+        REGULAR_USER_USERNAME = os.environ.get("ZNVAULT_REGULAR_USER_USERNAME", "zincapp/zincuser")
+        REGULAR_USER_PASSWORD = os.environ.get("ZNVAULT_REGULAR_USER_PASSWORD", "Admin123456#")
 
     # Default tenant for tests
-    DEFAULT_TENANT = "zincapp"
+    DEFAULT_TENANT = os.environ.get("ZNVAULT_DEFAULT_TENANT", "zincapp")
 
     @classmethod
     def create_test_client(cls) -> ZnVaultClient:

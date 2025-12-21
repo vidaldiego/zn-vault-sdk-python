@@ -262,6 +262,7 @@ class CreateSecretRequest:
     alias: str
     type: SecretType
     data: dict[str, Any]
+    tenant: str | None = None
     sub_type: SecretSubType | None = None
     tags: list[str] = field(default_factory=list)
     file_name: str | None = None
@@ -276,6 +277,8 @@ class CreateSecretRequest:
             "type": self.type.value,
             "data": self.data,
         }
+        if self.tenant:
+            result["tenant"] = self.tenant
         if self.sub_type:
             result["subType"] = self.sub_type.value
         if self.tags:

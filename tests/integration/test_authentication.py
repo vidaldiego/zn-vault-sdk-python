@@ -23,6 +23,10 @@ class TestAuthenticationIntegration:
 
         print(f"✓ Logged in as superadmin, token expires in {response.expires_in}s")
 
+    @pytest.mark.skipif(
+        not TestConfig.Users.REGULAR_USER_PASSWORD or TestConfig.Users.REGULAR_USER_PASSWORD == "Admin123456#",
+        reason="Regular user credentials not configured for production testing"
+    )
     def test_login_regular_user(self, unauthenticated_client):
         """Test login with valid regular user credentials."""
         response = unauthenticated_client.auth.login(

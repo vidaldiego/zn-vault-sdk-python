@@ -6,6 +6,7 @@ from znvault.http.client import HttpClient
 from znvault.auth.client import AuthClient
 from znvault.secrets.client import SecretsClient
 from znvault.kms.client import KmsClient
+from znvault.certificates.client import CertificatesClient
 from znvault.admin.users import UsersClient
 from znvault.admin.tenants import TenantsClient
 from znvault.admin.roles import RolesClient
@@ -46,6 +47,7 @@ class ZnVaultClient:
         self._auth = AuthClient(self._http)
         self._secrets = SecretsClient(self._http)
         self._kms = KmsClient(self._http)
+        self._certificates = CertificatesClient(self._http)
         self._users = UsersClient(self._http)
         self._tenants = TenantsClient(self._http)
         self._roles = RolesClient(self._http)
@@ -94,6 +96,11 @@ class ZnVaultClient:
     def kms(self) -> KmsClient:
         """Get the KMS client."""
         return self._kms
+
+    @property
+    def certificates(self) -> CertificatesClient:
+        """Get the certificates client for certificate lifecycle management."""
+        return self._certificates
 
     @property
     def users(self) -> UsersClient:
