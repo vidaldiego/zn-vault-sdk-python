@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "znvault"
-version = "1.4.1"
+version = "1.5.0"
 description = "Python SDK for ZN-Vault secrets management"
 readme = "README.md"
 license = {text = "Apache-2.0"}
