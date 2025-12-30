@@ -154,6 +154,52 @@ filter = SecretFilter(
 secrets = client.secrets.list(filter)
 ```
 
+### Pattern Matching & Search
+
+Use wildcard patterns with `*` to query secrets by path:
+
+```python
+from znvault import SecretFilter
+
+# Find all secrets under a path
+web_secrets = client.secrets.list(SecretFilter(alias_pattern="web/*"))
+
+# Find secrets containing "/env/" anywhere in the path
+env_secrets = client.secrets.list(SecretFilter(alias_pattern="*/env/*"))
+
+# SQL-like pattern matching
+db_secrets = client.secrets.list(SecretFilter(alias_pattern="*/env/secret_*"))
+
+# Match multiple path segments
+# Matches: db-mysql/production, db-postgres/prod-us, etc.
+prod_db = client.secrets.list(SecretFilter(alias_pattern="db-*/prod*"))
+
+# Combine pattern with type filter
+credentials = client.secrets.list(SecretFilter(
+    alias_pattern="*/production/*",
+    type=SecretType.CREDENTIAL
+))
+
+# Search for expiring certificates matching a pattern
+from datetime import datetime, timedelta
+
+expiring_certs = client.secrets.list(SecretFilter(
+    alias_pattern="*/ssl/*",
+    sub_type="certificate",
+    expiring_before=datetime.now() + timedelta(days=30)
+))
+```
+
+**Pattern Examples:**
+
+| Pattern | Matches |
+|---------|---------|
+| `web/*` | `web/api`, `web/frontend/config` |
+| `*/env/*` | `app/env/vars`, `service/env/config` |
+| `db-*/prod*` | `db-mysql/production`, `db-postgres/prod-us` |
+| `*secret*` | `my-secret`, `api/secret/key`, `secret-config` |
+| `*/production/db-*` | `app/production/db-main`, `api/production/db-replica` |
+
 ### File Upload/Download
 
 ```python
