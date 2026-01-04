@@ -1,5 +1,18 @@
 # Path: zn-vault-sdk-python/tests/integration/conftest.py
-"""Pytest configuration for integration tests."""
+"""Pytest configuration for integration tests.
+
+All test users use the standard password: SdkTest123456#
+
+Usage:
+    # Start the SDK test environment first (from zn-vault root):
+    npm run test:sdk:start
+
+    # Run integration tests:
+    pytest tests/integration/
+
+    # Or run against production (not recommended):
+    ZNVAULT_BASE_URL=https://vault.example.com pytest tests/integration/
+"""
 
 import os
 import uuid
@@ -7,13 +20,23 @@ import pytest
 from znvault.client import ZnVaultClient
 
 
+# Standard password for all test users (matches sdk-test-init.js)
+STANDARD_PASSWORD = "SdkTest123456#"
+
+
 class TestConfig:
     """Test configuration for integration tests."""
 
-    # Test server - can be overridden with ZNVAULT_BASE_URL env var
-    BASE_URL = os.environ.get("ZNVAULT_BASE_URL", "https://localhost:8443")
+    # Test server - defaults to SDK test environment (port 9443)
+    BASE_URL = os.environ.get("ZNVAULT_BASE_URL", "https://localhost:9443")
 
-    # Test users - can be overridden with ZNVAULT_USERNAME and ZNVAULT_PASSWORD env vars
+    # Default tenant
+    DEFAULT_TENANT = os.environ.get("ZNVAULT_TENANT", "sdk-test")
+
+    # Secondary tenant for isolation tests
+    TENANT_2 = "sdk-test-2"
+
+    # Test users - can be overridden with environment variables
     # Note: Username must be in format "tenant/username" for non-superadmin users.
     # Superadmin can omit tenant prefix. Email can also be used as username.
     class Users:
@@ -21,16 +44,42 @@ class TestConfig:
         SUPERADMIN_USERNAME = os.environ.get("ZNVAULT_USERNAME", "admin")
         SUPERADMIN_PASSWORD = os.environ.get("ZNVAULT_PASSWORD", "Admin123456#")
 
-        # Tenant admin - manages tenant resources (requires tenant/username format)
-        TENANT_ADMIN_USERNAME = os.environ.get("ZNVAULT_TENANT_ADMIN_USERNAME", "zincapp/zincadmin")
-        TENANT_ADMIN_PASSWORD = os.environ.get("ZNVAULT_TENANT_ADMIN_PASSWORD", "Admin123456#")
+        # Tenant admin - manages tenant resources with admin-crypto (requires tenant/username format)
+        _tenant = os.environ.get("ZNVAULT_TENANT", "sdk-test")
+        TENANT_ADMIN_USERNAME = os.environ.get("ZNVAULT_TENANT_ADMIN_USERNAME", f"{_tenant}/sdk-admin")
+        TENANT_ADMIN_PASSWORD = os.environ.get("ZNVAULT_TENANT_ADMIN_PASSWORD", STANDARD_PASSWORD)
 
-        # Regular user - limited access (requires tenant/username format)
-        REGULAR_USER_USERNAME = os.environ.get("ZNVAULT_REGULAR_USER_USERNAME", "zincapp/zincuser")
-        REGULAR_USER_PASSWORD = os.environ.get("ZNVAULT_REGULAR_USER_PASSWORD", "Admin123456#")
+        # Read-only user - can only read secrets (requires tenant/username format)
+        READER_USERNAME = os.environ.get("ZNVAULT_READER_USERNAME", f"{_tenant}/sdk-reader")
+        READER_PASSWORD = os.environ.get("ZNVAULT_READER_PASSWORD", STANDARD_PASSWORD)
 
-    # Default tenant for tests
-    DEFAULT_TENANT = os.environ.get("ZNVAULT_DEFAULT_TENANT", "zincapp")
+        # Read-write user - can read and write secrets (requires tenant/username format)
+        WRITER_USERNAME = os.environ.get("ZNVAULT_WRITER_USERNAME", f"{_tenant}/sdk-writer")
+        WRITER_PASSWORD = os.environ.get("ZNVAULT_WRITER_PASSWORD", STANDARD_PASSWORD)
+
+        # KMS user - can only use KMS operations (requires tenant/username format)
+        KMS_USER_USERNAME = os.environ.get("ZNVAULT_KMS_USER_USERNAME", f"{_tenant}/sdk-kms-user")
+        KMS_USER_PASSWORD = os.environ.get("ZNVAULT_KMS_USER_PASSWORD", STANDARD_PASSWORD)
+
+        # Certificate user - can manage certificates (requires tenant/username format)
+        CERT_USER_USERNAME = os.environ.get("ZNVAULT_CERT_USER_USERNAME", f"{_tenant}/sdk-cert-user")
+        CERT_USER_PASSWORD = os.environ.get("ZNVAULT_CERT_USER_PASSWORD", STANDARD_PASSWORD)
+
+        # Second tenant admin (for isolation testing)
+        TENANT2_ADMIN_USERNAME = os.environ.get("ZNVAULT_TENANT2_ADMIN_USERNAME", "sdk-test-2/sdk-admin")
+        TENANT2_ADMIN_PASSWORD = os.environ.get("ZNVAULT_TENANT2_ADMIN_PASSWORD", STANDARD_PASSWORD)
+
+    # Pre-created API keys (created by sdk-test-init.js)
+    class ApiKeys:
+        FULL_ACCESS = os.environ.get("ZNVAULT_API_KEY_FULL")
+        READ_ONLY = os.environ.get("ZNVAULT_API_KEY_READONLY")
+        KMS_ONLY = os.environ.get("ZNVAULT_API_KEY_KMS")
+        WITH_IP_RESTRICTION = os.environ.get("ZNVAULT_API_KEY_WITH_IP")
+        PROD_ONLY = os.environ.get("ZNVAULT_API_KEY_PROD_ONLY")
+
+    # Test resources
+    class Resources:
+        TEST_SECRET_ALIAS = os.environ.get("ZNVAULT_TEST_SECRET_ALIAS", "sdk-test/database/credentials")
 
     @classmethod
     def create_test_client(cls) -> ZnVaultClient:
@@ -59,10 +108,38 @@ class TestConfig:
         return client
 
     @classmethod
-    def create_regular_user_client(cls) -> ZnVaultClient:
-        """Create an authenticated client as regular user."""
+    def create_reader_client(cls) -> ZnVaultClient:
+        """Create an authenticated client as read-only user."""
         client = cls.create_test_client()
-        client.auth.login(cls.Users.REGULAR_USER_USERNAME, cls.Users.REGULAR_USER_PASSWORD)
+        client.auth.login(cls.Users.READER_USERNAME, cls.Users.READER_PASSWORD)
+        return client
+
+    @classmethod
+    def create_writer_client(cls) -> ZnVaultClient:
+        """Create an authenticated client as read-write user."""
+        client = cls.create_test_client()
+        client.auth.login(cls.Users.WRITER_USERNAME, cls.Users.WRITER_PASSWORD)
+        return client
+
+    @classmethod
+    def create_kms_user_client(cls) -> ZnVaultClient:
+        """Create an authenticated client as KMS user."""
+        client = cls.create_test_client()
+        client.auth.login(cls.Users.KMS_USER_USERNAME, cls.Users.KMS_USER_PASSWORD)
+        return client
+
+    @classmethod
+    def create_cert_user_client(cls) -> ZnVaultClient:
+        """Create an authenticated client as certificate user."""
+        client = cls.create_test_client()
+        client.auth.login(cls.Users.CERT_USER_USERNAME, cls.Users.CERT_USER_PASSWORD)
+        return client
+
+    @classmethod
+    def create_tenant2_admin_client(cls) -> ZnVaultClient:
+        """Create an authenticated client as second tenant admin."""
+        client = cls.create_test_client()
+        client.auth.login(cls.Users.TENANT2_ADMIN_USERNAME, cls.Users.TENANT2_ADMIN_PASSWORD)
         return client
 
     @staticmethod
@@ -122,8 +199,40 @@ def tenant_admin_client():
 
 
 @pytest.fixture
-def regular_user_client():
-    """Create an authenticated regular user client."""
+def reader_client():
+    """Create an authenticated read-only user client."""
     if not integration_tests_enabled():
         pytest.skip("Integration tests require ZNVAULT_BASE_URL environment variable")
-    return TestConfig.create_regular_user_client()
+    return TestConfig.create_reader_client()
+
+
+@pytest.fixture
+def writer_client():
+    """Create an authenticated read-write user client."""
+    if not integration_tests_enabled():
+        pytest.skip("Integration tests require ZNVAULT_BASE_URL environment variable")
+    return TestConfig.create_writer_client()
+
+
+@pytest.fixture
+def kms_user_client():
+    """Create an authenticated KMS user client."""
+    if not integration_tests_enabled():
+        pytest.skip("Integration tests require ZNVAULT_BASE_URL environment variable")
+    return TestConfig.create_kms_user_client()
+
+
+@pytest.fixture
+def cert_user_client():
+    """Create an authenticated certificate user client."""
+    if not integration_tests_enabled():
+        pytest.skip("Integration tests require ZNVAULT_BASE_URL environment variable")
+    return TestConfig.create_cert_user_client()
+
+
+@pytest.fixture
+def tenant2_admin_client():
+    """Create an authenticated second tenant admin client."""
+    if not integration_tests_enabled():
+        pytest.skip("Integration tests require ZNVAULT_BASE_URL environment variable")
+    return TestConfig.create_tenant2_admin_client()

@@ -18,6 +18,8 @@ src/znvault/audit/__init__.py
 src/znvault/audit/client.py
 src/znvault/auth/__init__.py
 src/znvault/auth/client.py
+src/znvault/certificates/__init__.py
+src/znvault/certificates/client.py
 src/znvault/exceptions/__init__.py
 src/znvault/exceptions/errors.py
 src/znvault/health/__init__.py
@@ -30,6 +32,7 @@ src/znvault/models/__init__.py
 src/znvault/models/admin.py
 src/znvault/models/audit.py
 src/znvault/models/auth.py
+src/znvault/models/certificates.py
 src/znvault/models/common.py
 src/znvault/models/health.py
 src/znvault/models/kms.py

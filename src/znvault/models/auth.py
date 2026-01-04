@@ -3,7 +3,33 @@
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
+from typing import Any, TypedDict
+
+
+class ApiKeyTimeRange(TypedDict, total=False):
+    """Time range condition for API key access."""
+
+    start: str  # e.g., "09:00"
+    end: str  # e.g., "17:00"
+    timezone: str  # e.g., "UTC"
+
+
+class ApiKeyResourceConditions(TypedDict, total=False):
+    """Resource-specific conditions."""
+
+    certificates: list[str]
+    secrets: list[str]
+
+
+class ApiKeyConditions(TypedDict, total=False):
+    """Inline ABAC conditions for API keys."""
+
+    ip: list[str]  # IP/CIDR allowlist
+    time_range: ApiKeyTimeRange
+    methods: list[str]  # HTTP methods allowed
+    resources: ApiKeyResourceConditions  # Specific resource IDs
+    aliases: list[str]  # Glob patterns for aliases
+    resource_tags: dict[str, str]  # Tag matching
 
 
 @dataclass
@@ -80,10 +106,25 @@ class ApiKey:
     last_used: datetime | None = None
     tenant_id: str | None = None
     permissions: list[str] = field(default_factory=list)
+    ip_allowlist: list[str] = field(default_factory=list)
+    conditions: ApiKeyConditions | None = None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "ApiKey":
         """Create from API response dictionary."""
+        # Parse conditions if present
+        conditions_data = data.get("conditions")
+        conditions: ApiKeyConditions | None = None
+        if conditions_data:
+            conditions = ApiKeyConditions(
+                ip=conditions_data.get("ip"),
+                time_range=conditions_data.get("timeRange"),
+                methods=conditions_data.get("methods"),
+                resources=conditions_data.get("resources"),
+                aliases=conditions_data.get("aliases"),
+                resource_tags=conditions_data.get("resourceTags"),
+            )
+
         return cls(
             id=data.get("id", ""),
             name=data.get("name", ""),
@@ -94,6 +135,8 @@ class ApiKey:
             last_used=_parse_datetime(data.get("lastUsed")),
             tenant_id=data.get("tenantId"),
             permissions=data.get("permissions", []),
+            ip_allowlist=data.get("ipAllowlist", []),
+            conditions=conditions,
         )
 
 

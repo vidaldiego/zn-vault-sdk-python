@@ -23,6 +23,9 @@ from znvault.models import (
     AuthResult,
     User,
     ApiKey,
+    ApiKeyConditions,
+    ApiKeyTimeRange,
+    ApiKeyResourceConditions,
     # Secrets
     Secret,
     SecretData,
@@ -80,6 +83,9 @@ __all__ = [
     "AuthResult",
     "User",
     "ApiKey",
+    "ApiKeyConditions",
+    "ApiKeyTimeRange",
+    "ApiKeyResourceConditions",
     # Secret models
     "Secret",
     "SecretData",

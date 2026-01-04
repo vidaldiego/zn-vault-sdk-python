@@ -1,7 +1,14 @@
 # Path: zn-vault-sdk-python/src/znvault/models/__init__.py
 """ZN-Vault model classes."""
 
-from znvault.models.auth import AuthResult, User, ApiKey
+from znvault.models.auth import (
+    AuthResult,
+    User,
+    ApiKey,
+    ApiKeyConditions,
+    ApiKeyTimeRange,
+    ApiKeyResourceConditions,
+)
 from znvault.models.secrets import (
     Secret,
     SecretData,
@@ -65,6 +72,9 @@ __all__ = [
     "AuthResult",
     "User",
     "ApiKey",
+    "ApiKeyConditions",
+    "ApiKeyTimeRange",
+    "ApiKeyResourceConditions",
     # Secrets
     "Secret",
     "SecretData",

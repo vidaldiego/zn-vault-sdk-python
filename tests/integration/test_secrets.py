@@ -10,16 +10,16 @@ from .conftest import TestConfig
 class TestSecretsIntegration:
     """Integration tests for secrets management functionality.
 
-    Note: Uses superadmin_client for testing against production where tenant
-    user credentials may not be available. In a development environment,
-    regular_user_client would be preferred due to separation of duties.
+    Uses tenant_admin_client which has full permissions including secret:read:value
+    and admin-crypto, allowing both creation and decryption of secrets.
+    Tenant must have allow_admin_secret_access=true (configured by sdk-test-init.js).
     """
 
     @pytest.fixture(autouse=True)
-    def setup_cleanup(self, superadmin_client):
+    def setup_cleanup(self, tenant_admin_client):
         """Setup and cleanup for each test."""
         self.created_secret_ids = []
-        self.client = superadmin_client
+        self.client = tenant_admin_client
         yield
         # Cleanup created secrets
         for secret_id in self.created_secret_ids:
@@ -75,15 +75,10 @@ class TestSecretsIntegration:
 
         print(f"✓ Created opaque secret: {secret.id}")
 
-    @pytest.mark.skipif(
-        TestConfig.Users.SUPERADMIN_USERNAME == "admin",
-        reason="Superadmin cannot decrypt secrets due to separation of duties"
-    )
     def test_decrypt_secret(self):
         """Test decrypting secret value.
 
-        Note: This test requires a regular user with secret:read:value permission.
-        Superadmin cannot decrypt secrets due to separation of duties principle.
+        Tenant admin with admin-crypto and allow_admin_secret_access=true can decrypt.
         """
         alias = TestConfig.unique_alias("decrypt")
 
@@ -131,8 +126,6 @@ class TestSecretsIntegration:
 
         assert updated.version == 2
 
-        # Note: Skipping decrypt verification as superadmin cannot decrypt
-        # due to separation of duties principle
         print(f"✓ Updated secret, version: {created.version} -> {updated.version}")
 
     def test_rotate_secret(self):
@@ -158,8 +151,6 @@ class TestSecretsIntegration:
 
         assert rotated.version == 2
 
-        # Note: Skipping decrypt verification as superadmin cannot decrypt
-        # due to separation of duties principle
         print(f"✓ Rotated secret, version: {created.version} -> {rotated.version}")
 
     def test_list_secrets(self):

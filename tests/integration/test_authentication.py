@@ -23,19 +23,25 @@ class TestAuthenticationIntegration:
 
         print(f"✓ Logged in as superadmin, token expires in {response.expires_in}s")
 
-    @pytest.mark.skipif(
-        not TestConfig.Users.REGULAR_USER_PASSWORD or TestConfig.Users.REGULAR_USER_PASSWORD == "Admin123456#",
-        reason="Regular user credentials not configured for production testing"
-    )
-    def test_login_regular_user(self, unauthenticated_client):
-        """Test login with valid regular user credentials."""
+    def test_login_reader_user(self, unauthenticated_client):
+        """Test login with valid reader user credentials."""
         response = unauthenticated_client.auth.login(
-            TestConfig.Users.REGULAR_USER_USERNAME,
-            TestConfig.Users.REGULAR_USER_PASSWORD,
+            TestConfig.Users.READER_USERNAME,
+            TestConfig.Users.READER_PASSWORD,
         )
 
         assert response.access_token is not None
-        print("✓ Logged in as regular user")
+        print("✓ Logged in as reader user")
+
+    def test_login_writer_user(self, unauthenticated_client):
+        """Test login with valid writer user credentials."""
+        response = unauthenticated_client.auth.login(
+            TestConfig.Users.WRITER_USERNAME,
+            TestConfig.Users.WRITER_PASSWORD,
+        )
+
+        assert response.access_token is not None
+        print("✓ Logged in as writer user")
 
     def test_login_invalid_credentials(self, unauthenticated_client):
         """Test login with invalid credentials fails."""

@@ -3,9 +3,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from znvault.models.auth import AuthResult, User, ApiKey
+from znvault.models.auth import AuthResult, User, ApiKey, ApiKeyConditions
 from znvault.models.common import Page
 
 if TYPE_CHECKING:
@@ -151,27 +151,59 @@ class AuthClient:
     def create_api_key(
         self,
         name: str,
-        expires_in: str | None = None,
-        permissions: list[str] | None = None,
+        permissions: list[str],
+        *,
+        expires_in_days: int | None = None,
+        ip_allowlist: list[str] | None = None,
+        conditions: ApiKeyConditions | None = None,
+        tenant_id: str | None = None,
+        description: str | None = None,
     ) -> ApiKey:
         """
         Create a new API key.
 
         Args:
             name: Name for the API key.
-            expires_in: Expiration duration (e.g., "90d", "1y").
-            permissions: Optional list of permissions.
+            permissions: List of permissions (required).
+            expires_in_days: Optional expiration in days.
+            ip_allowlist: Optional list of allowed IPs/CIDRs.
+            conditions: Optional inline ABAC conditions.
+            tenant_id: Required for superadmin creating tenant-scoped keys.
+            description: Optional description.
 
         Returns:
             The created API key (includes the key value only on creation).
         """
-        data: dict = {"name": name}
-        if expires_in:
-            data["expiresIn"] = expires_in
-        if permissions:
-            data["permissions"] = permissions
+        data: dict[str, Any] = {"name": name, "permissions": permissions}
+        if expires_in_days is not None:
+            data["expiresInDays"] = expires_in_days
+        if ip_allowlist:
+            data["ipAllowlist"] = ip_allowlist
+        if description:
+            data["description"] = description
+        if conditions:
+            # Convert snake_case to camelCase for API
+            api_conditions: dict[str, Any] = {}
+            if "ip" in conditions:
+                api_conditions["ip"] = conditions["ip"]
+            if "time_range" in conditions:
+                api_conditions["timeRange"] = conditions["time_range"]
+            if "methods" in conditions:
+                api_conditions["methods"] = conditions["methods"]
+            if "resources" in conditions:
+                api_conditions["resources"] = conditions["resources"]
+            if "aliases" in conditions:
+                api_conditions["aliases"] = conditions["aliases"]
+            if "resource_tags" in conditions:
+                api_conditions["resourceTags"] = conditions["resource_tags"]
+            data["conditions"] = api_conditions
 
-        response = self._http.post("/auth/api-keys", data)
+        # Tenant ID is passed as query parameter
+        path = "/auth/api-keys"
+        if tenant_id:
+            path = f"/auth/api-keys?tenantId={tenant_id}"
+
+        response = self._http.post(path, data)
         return ApiKey.from_dict(response)
 
     def list_api_keys(self) -> list[ApiKey]:

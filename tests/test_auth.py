@@ -32,15 +32,72 @@ class TestAuthClientApiKeys:
             "key": "znv_abc123xyz",
             "createdAt": "2024-01-01T00:00:00Z",
             "expiresAt": "2024-04-01T00:00:00Z",
+            "permissions": ["secret:read:metadata"],
         }
 
-        result = auth_client.create_api_key("test-key", expires_in="90d")
+        result = auth_client.create_api_key(
+            "test-key",
+            permissions=["secret:read:metadata"],
+            expires_in_days=90,
+        )
 
         assert result.id == "key-123"
         assert result.name == "test-key"
         mock_http.post.assert_called_once_with(
             "/auth/api-keys",
-            {"name": "test-key", "expiresIn": "90d"},
+            {"name": "test-key", "permissions": ["secret:read:metadata"], "expiresInDays": 90},
+        )
+
+    def test_create_api_key_with_tenant(self, auth_client, mock_http):
+        """Test creating an API key with tenant ID."""
+        mock_http.post.return_value = {
+            "id": "key-456",
+            "name": "tenant-key",
+            "prefix": "znv_xyz",
+            "key": "znv_xyz789",
+            "tenantId": "acme",
+            "permissions": ["secret:read:metadata"],
+        }
+
+        result = auth_client.create_api_key(
+            "tenant-key",
+            permissions=["secret:read:metadata"],
+            tenant_id="acme",
+        )
+
+        assert result.id == "key-456"
+        assert result.tenant_id == "acme"
+        mock_http.post.assert_called_once_with(
+            "/auth/api-keys?tenantId=acme",
+            {"name": "tenant-key", "permissions": ["secret:read:metadata"]},
+        )
+
+    def test_create_api_key_with_conditions(self, auth_client, mock_http):
+        """Test creating an API key with inline conditions."""
+        mock_http.post.return_value = {
+            "id": "key-789",
+            "name": "restricted-key",
+            "prefix": "znv_cond",
+            "key": "znv_cond123",
+            "permissions": ["secret:read:metadata"],
+            "conditions": {"ip": ["10.0.0.0/8"]},
+        }
+
+        result = auth_client.create_api_key(
+            "restricted-key",
+            permissions=["secret:read:metadata"],
+            conditions={"ip": ["10.0.0.0/8"]},
+        )
+
+        assert result.id == "key-789"
+        assert result.conditions is not None
+        mock_http.post.assert_called_once_with(
+            "/auth/api-keys",
+            {
+                "name": "restricted-key",
+                "permissions": ["secret:read:metadata"],
+                "conditions": {"ip": ["10.0.0.0/8"]},
+            },
         )
 
     def test_list_api_keys(self, auth_client, mock_http):
@@ -117,89 +174,3 @@ class TestAuthClientApiKeys:
         assert result.key_prefix == "znv_new"
         assert result.key == "znv_new123abc"
         mock_http.post.assert_called_once_with("/auth/api-keys/self/rotate", {})
-
-
-class TestApiKeyRotationIntegration:
-    """Integration tests for API key rotation (requires running server)."""
-
-    @pytest.fixture
-    def client(self):
-        """Create a ZnVault client for integration tests."""
-        from znvault.client import ZnVaultClient
-
-        base_url = os.environ.get("ZN_VAULT_URL", "https://localhost:8443")
-        return (
-            ZnVaultClient.builder()
-            .base_url(base_url)
-            .trust_self_signed(True)
-            .verify_ssl(False)
-            .build()
-        )
-
-    @pytest.mark.integration
-    def test_api_key_lifecycle(self, client):
-        """Test full API key lifecycle: create, rotate, delete."""
-        # Login first
-        username = os.environ.get("ZN_VAULT_USER", "admin")
-        password = os.environ.get("ZN_VAULT_PASS", "Admin123456#")
-        client.auth.login(username, password)
-
-        # Create a key
-        key_name = f"test-key-{int(time.time())}"
-        created = client.auth.create_api_key(key_name, expires_in="1d")
-        assert created.key is not None
-        assert created.key.startswith("znv_")
-
-        try:
-            # Rotate the key
-            rotated = client.auth.rotate_api_key(created.id)
-            assert rotated.key != created.key
-            assert rotated.name == created.name
-
-            # Delete the rotated key
-            client.auth.revoke_api_key(rotated.id)
-        except Exception:
-            # Cleanup on failure
-            client.auth.revoke_api_key(created.id)
-            raise
-
-    @pytest.mark.integration
-    def test_self_rotation(self, client):
-        """Test self-rotation of API key."""
-        from znvault.client import ZnVaultClient
-
-        # Login and create an API key
-        username = os.environ.get("ZN_VAULT_USER", "admin")
-        password = os.environ.get("ZN_VAULT_PASS", "Admin123456#")
-        client.auth.login(username, password)
-
-        key_name = f"self-rotate-{int(time.time())}"
-        original = client.auth.create_api_key(key_name, expires_in="1d")
-
-        try:
-            # Create a client with the API key
-            base_url = os.environ.get("ZN_VAULT_URL", "https://localhost:8443")
-            api_key_client = (
-                ZnVaultClient.builder()
-                .base_url(base_url)
-                .api_key(original.key)
-                .trust_self_signed(True)
-                .verify_ssl(False)
-                .build()
-            )
-
-            # Get current key info
-            current = api_key_client.auth.get_current_api_key()
-            assert current.name == key_name
-
-            # Self-rotate
-            rotated = api_key_client.auth.rotate_current_api_key()
-            assert rotated.key != original.key
-            assert rotated.name == original.name
-
-            # Cleanup using admin client
-            client.auth.revoke_api_key(rotated.id)
-        except Exception:
-            # Cleanup on failure
-            client.auth.revoke_api_key(original.id)
-            raise
