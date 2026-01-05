@@ -3,7 +3,10 @@
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, TypedDict
+from typing import Any, Literal, TypedDict
+
+# Rotation mode for managed API keys
+RotationMode = Literal["scheduled", "on-use", "on-bind"]
 
 
 class ApiKeyTimeRange(TypedDict, total=False):
@@ -151,3 +154,111 @@ def _parse_datetime(value: str | None) -> datetime | None:
         return datetime.fromisoformat(value.replace("Z", "+00:00"))
     except (ValueError, TypeError):
         return None
+
+
+# ============================================================================
+# Managed API Keys
+# ============================================================================
+
+
+@dataclass
+class ManagedApiKey:
+    """
+    Managed API key with auto-rotation configuration.
+
+    Managed keys automatically rotate based on the configured mode:
+    - scheduled: Rotates at fixed intervals (e.g., every 24 hours)
+    - on-use: Rotates after being used (TTL resets on each use)
+    - on-bind: Rotates each time bind is called
+    """
+
+    id: str
+    name: str
+    tenant_id: str
+    permissions: list[str]
+    rotation_mode: RotationMode
+    grace_period: str
+    enabled: bool
+    created_at: datetime | None = None
+    description: str | None = None
+    rotation_interval: str | None = None
+    last_rotated_at: datetime | None = None
+    next_rotation_at: datetime | None = None
+    created_by: str | None = None
+    updated_at: datetime | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "ManagedApiKey":
+        """Create from API response dictionary."""
+        return cls(
+            id=data.get("id", ""),
+            name=data.get("name", ""),
+            tenant_id=data.get("tenantId", ""),
+            permissions=data.get("permissions", []),
+            rotation_mode=data.get("rotationMode", "scheduled"),
+            grace_period=data.get("gracePeriod", "5m"),
+            enabled=data.get("enabled", True),
+            created_at=_parse_datetime(data.get("createdAt")),
+            description=data.get("description"),
+            rotation_interval=data.get("rotationInterval"),
+            last_rotated_at=_parse_datetime(data.get("lastRotatedAt")),
+            next_rotation_at=_parse_datetime(data.get("nextRotationAt")),
+            created_by=data.get("createdBy"),
+            updated_at=_parse_datetime(data.get("updatedAt")),
+        )
+
+
+@dataclass
+class ManagedKeyBindResponse:
+    """
+    Response from binding to a managed API key.
+
+    This is what agents use to get the current key value and rotation metadata.
+    """
+
+    id: str
+    key: str
+    prefix: str
+    name: str
+    expires_at: datetime | None
+    grace_period: str
+    rotation_mode: RotationMode
+    permissions: list[str]
+    next_rotation_at: datetime | None = None
+    grace_expires_at: datetime | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "ManagedKeyBindResponse":
+        """Create from API response dictionary."""
+        return cls(
+            id=data.get("id", ""),
+            key=data.get("key", ""),
+            prefix=data.get("prefix", ""),
+            name=data.get("name", ""),
+            expires_at=_parse_datetime(data.get("expiresAt")),
+            grace_period=data.get("gracePeriod", "5m"),
+            rotation_mode=data.get("rotationMode", "scheduled"),
+            permissions=data.get("permissions", []),
+            next_rotation_at=_parse_datetime(data.get("nextRotationAt")),
+            grace_expires_at=_parse_datetime(data.get("graceExpiresAt")),
+        )
+
+
+@dataclass
+class ManagedKeyRotateResponse:
+    """Response from rotating a managed API key."""
+
+    key: str
+    api_key: ManagedApiKey
+    grace_expires_at: datetime | None
+    message: str | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "ManagedKeyRotateResponse":
+        """Create from API response dictionary."""
+        return cls(
+            key=data.get("key", ""),
+            api_key=ManagedApiKey.from_dict(data.get("apiKey", {})),
+            grace_expires_at=_parse_datetime(data.get("graceExpiresAt")),
+            message=data.get("message"),
+        )

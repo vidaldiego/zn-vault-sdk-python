@@ -26,6 +26,10 @@ from znvault.models import (
     ApiKeyConditions,
     ApiKeyTimeRange,
     ApiKeyResourceConditions,
+    RotationMode,
+    ManagedApiKey,
+    ManagedKeyBindResponse,
+    ManagedKeyRotateResponse,
     # Secrets
     Secret,
     SecretData,
@@ -86,6 +90,10 @@ __all__ = [
     "ApiKeyConditions",
     "ApiKeyTimeRange",
     "ApiKeyResourceConditions",
+    "RotationMode",
+    "ManagedApiKey",
+    "ManagedKeyBindResponse",
+    "ManagedKeyRotateResponse",
     # Secret models
     "Secret",
     "SecretData",

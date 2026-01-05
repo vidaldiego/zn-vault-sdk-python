@@ -5,7 +5,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from znvault.models.auth import AuthResult, User, ApiKey, ApiKeyConditions
+from znvault.models.auth import (
+    AuthResult,
+    User,
+    ApiKey,
+    ApiKeyConditions,
+    ManagedApiKey,
+    ManagedKeyBindResponse,
+    ManagedKeyRotateResponse,
+    RotationMode,
+)
 from znvault.models.common import Page
 
 if TYPE_CHECKING:
@@ -294,3 +303,225 @@ class AuthClient:
         """
         response = self._http.post("/auth/api-keys/self/rotate", {})
         return ApiKey.from_dict(response)
+
+    # =========================================================================
+    # Managed API Keys
+    # =========================================================================
+
+    def create_managed_api_key(
+        self,
+        name: str,
+        permissions: list[str],
+        rotation_mode: RotationMode,
+        *,
+        rotation_interval: str | None = None,
+        grace_period: str | None = None,
+        description: str | None = None,
+        expires_in_days: int | None = None,
+        tenant_id: str | None = None,
+    ) -> ManagedApiKey:
+        """
+        Create a managed API key with auto-rotation configuration.
+
+        Managed keys automatically rotate based on the configured mode:
+        - scheduled: Rotates at fixed intervals (requires rotation_interval)
+        - on-use: Rotates after being used (TTL resets on each use)
+        - on-bind: Rotates each time bind is called
+
+        Args:
+            name: Unique name for the managed key.
+            permissions: List of permissions for the key.
+            rotation_mode: Rotation mode (scheduled, on-use, on-bind).
+            rotation_interval: Interval for scheduled rotation (e.g., "24h", "7d").
+            grace_period: Grace period for smooth transitions (e.g., "5m").
+            description: Optional description.
+            expires_in_days: Optional expiration in days.
+            tenant_id: Required for superadmin creating tenant-scoped keys.
+
+        Returns:
+            The created managed key metadata (use bind to get the key value).
+        """
+        data: dict[str, Any] = {
+            "name": name,
+            "permissions": permissions,
+            "rotationMode": rotation_mode,
+        }
+        if rotation_interval:
+            data["rotationInterval"] = rotation_interval
+        if grace_period:
+            data["gracePeriod"] = grace_period
+        if description:
+            data["description"] = description
+        if expires_in_days is not None:
+            data["expiresInDays"] = expires_in_days
+
+        path = "/auth/api-keys/managed"
+        if tenant_id:
+            path = f"/auth/api-keys/managed?tenantId={tenant_id}"
+
+        response = self._http.post(path, data)
+        api_key_data = response.get("apiKey", response)
+        return ManagedApiKey.from_dict(api_key_data)
+
+    def list_managed_api_keys(
+        self,
+        tenant_id: str | None = None,
+    ) -> list[ManagedApiKey]:
+        """
+        List managed API keys.
+
+        Args:
+            tenant_id: Optional tenant ID filter (for superadmin).
+
+        Returns:
+            List of managed keys.
+        """
+        path = "/auth/api-keys/managed"
+        if tenant_id:
+            path = f"/auth/api-keys/managed?tenantId={tenant_id}"
+
+        response = self._http.get(path)
+        keys = response.get("keys", [])
+        return [ManagedApiKey.from_dict(k) for k in keys]
+
+    def get_managed_api_key(
+        self,
+        name: str,
+        tenant_id: str | None = None,
+    ) -> ManagedApiKey:
+        """
+        Get a managed API key by name.
+
+        Args:
+            name: The managed key name.
+            tenant_id: Optional tenant ID (for cross-tenant access).
+
+        Returns:
+            The managed key metadata.
+        """
+        from urllib.parse import quote
+
+        path = f"/auth/api-keys/managed/{quote(name, safe='')}"
+        if tenant_id:
+            path = f"{path}?tenantId={tenant_id}"
+
+        response = self._http.get(path)
+        return ManagedApiKey.from_dict(response)
+
+    def bind_managed_api_key(
+        self,
+        name: str,
+        tenant_id: str | None = None,
+    ) -> ManagedKeyBindResponse:
+        """
+        Bind to a managed API key to get the current key value.
+
+        This is the primary method for agents to obtain their API key.
+        The response includes rotation metadata to help determine when
+        to re-bind for a new key.
+
+        Security: This endpoint requires the caller to already have a valid
+        API key (the current one, even during grace period). This prevents
+        unauthorized access to managed keys.
+
+        Args:
+            name: The managed key name.
+            tenant_id: Optional tenant ID (for cross-tenant access).
+
+        Returns:
+            The current key value and rotation metadata.
+        """
+        from urllib.parse import quote
+
+        path = f"/auth/api-keys/managed/{quote(name, safe='')}/bind"
+        if tenant_id:
+            path = f"{path}?tenantId={tenant_id}"
+
+        response = self._http.post(path, {})
+        return ManagedKeyBindResponse.from_dict(response)
+
+    def rotate_managed_api_key(
+        self,
+        name: str,
+        tenant_id: str | None = None,
+    ) -> ManagedKeyRotateResponse:
+        """
+        Force rotate a managed API key.
+
+        Creates a new key immediately, regardless of the rotation schedule.
+        The old key remains valid during the grace period.
+
+        Args:
+            name: The managed key name.
+            tenant_id: Optional tenant ID (for cross-tenant access).
+
+        Returns:
+            The new key value and rotation info.
+        """
+        from urllib.parse import quote
+
+        path = f"/auth/api-keys/managed/{quote(name, safe='')}/rotate"
+        if tenant_id:
+            path = f"{path}?tenantId={tenant_id}"
+
+        response = self._http.post(path, {})
+        return ManagedKeyRotateResponse.from_dict(response)
+
+    def update_managed_api_key_config(
+        self,
+        name: str,
+        *,
+        rotation_interval: str | None = None,
+        grace_period: str | None = None,
+        enabled: bool | None = None,
+        tenant_id: str | None = None,
+    ) -> ManagedApiKey:
+        """
+        Update managed API key configuration.
+
+        Args:
+            name: The managed key name.
+            rotation_interval: New rotation interval.
+            grace_period: New grace period.
+            enabled: Enable/disable the key.
+            tenant_id: Optional tenant ID (for cross-tenant access).
+
+        Returns:
+            Updated managed key metadata.
+        """
+        from urllib.parse import quote
+
+        data: dict[str, Any] = {}
+        if rotation_interval is not None:
+            data["rotationInterval"] = rotation_interval
+        if grace_period is not None:
+            data["gracePeriod"] = grace_period
+        if enabled is not None:
+            data["enabled"] = enabled
+
+        path = f"/auth/api-keys/managed/{quote(name, safe='')}/config"
+        if tenant_id:
+            path = f"{path}?tenantId={tenant_id}"
+
+        response = self._http.patch(path, data)
+        return ManagedApiKey.from_dict(response)
+
+    def delete_managed_api_key(
+        self,
+        name: str,
+        tenant_id: str | None = None,
+    ) -> None:
+        """
+        Delete a managed API key.
+
+        Args:
+            name: The managed key name.
+            tenant_id: Optional tenant ID (for cross-tenant access).
+        """
+        from urllib.parse import quote
+
+        path = f"/auth/api-keys/managed/{quote(name, safe='')}"
+        if tenant_id:
+            path = f"{path}?tenantId={tenant_id}"
+
+        self._http.delete(path)
