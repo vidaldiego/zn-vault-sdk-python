@@ -262,3 +262,106 @@ class ManagedKeyRotateResponse:
             grace_expires_at=_parse_datetime(data.get("graceExpiresAt")),
             message=data.get("message"),
         )
+
+
+# ============================================================================
+# Registration Tokens (Agent Bootstrap)
+# ============================================================================
+
+# Status for registration tokens
+RegistrationTokenStatus = Literal["active", "used", "expired", "revoked"]
+
+
+@dataclass
+class RegistrationToken:
+    """
+    Registration token for agent bootstrapping.
+
+    Tokens are one-time use and allow agents to exchange them for a
+    managed API key binding without prior authentication.
+    """
+
+    id: str
+    prefix: str
+    managed_key_name: str
+    tenant_id: str
+    created_by: str
+    status: RegistrationTokenStatus
+    created_at: datetime | None = None
+    expires_at: datetime | None = None
+    used_at: datetime | None = None
+    used_by_ip: str | None = None
+    revoked_at: datetime | None = None
+    description: str | None = None
+    created_by_username: str | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "RegistrationToken":
+        """Create from API response dictionary."""
+        return cls(
+            id=data.get("id", ""),
+            prefix=data.get("prefix", ""),
+            managed_key_name=data.get("managedKeyName", data.get("managed_key_name", "")),
+            tenant_id=data.get("tenantId", data.get("tenant_id", "")),
+            created_by=data.get("createdBy", data.get("created_by", "")),
+            status=data.get("status", "active"),
+            created_at=_parse_datetime(data.get("createdAt", data.get("created_at"))),
+            expires_at=_parse_datetime(data.get("expiresAt", data.get("expires_at"))),
+            used_at=_parse_datetime(data.get("usedAt", data.get("used_at"))),
+            used_by_ip=data.get("usedByIp", data.get("used_by_ip")),
+            revoked_at=_parse_datetime(data.get("revokedAt", data.get("revoked_at"))),
+            description=data.get("description"),
+            created_by_username=data.get("createdByUsername", data.get("created_by_username")),
+        )
+
+
+@dataclass
+class CreateRegistrationTokenResponse:
+    """
+    Response from creating a registration token.
+
+    The full token value is only shown once - save it immediately!
+    """
+
+    token: str
+    prefix: str
+    id: str
+    managed_key_name: str
+    tenant_id: str
+    expires_at: datetime | None
+    description: str | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "CreateRegistrationTokenResponse":
+        """Create from API response dictionary."""
+        return cls(
+            token=data.get("token", ""),
+            prefix=data.get("prefix", ""),
+            id=data.get("id", ""),
+            managed_key_name=data.get("managedKeyName", ""),
+            tenant_id=data.get("tenantId", ""),
+            expires_at=_parse_datetime(data.get("expiresAt")),
+            description=data.get("description"),
+        )
+
+
+@dataclass
+class BootstrapResponse:
+    """Response from the agent bootstrap endpoint."""
+
+    key: str
+    name: str
+    permissions: list[str]
+    expires_at: datetime | None
+    notice: str | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "BootstrapResponse":
+        """Create from API response dictionary."""
+        return cls(
+            key=data.get("key", ""),
+            name=data.get("name", ""),
+            permissions=data.get("permissions", []),
+            expires_at=_parse_datetime(data.get("expiresAt")),
+            notice=data.get("_notice"),
+        )

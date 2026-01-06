@@ -14,6 +14,9 @@ from znvault.models.auth import (
     ManagedKeyBindResponse,
     ManagedKeyRotateResponse,
     RotationMode,
+    RegistrationToken,
+    CreateRegistrationTokenResponse,
+    BootstrapResponse,
 )
 from znvault.models.common import Page
 
@@ -525,3 +528,121 @@ class AuthClient:
             path = f"{path}?tenantId={tenant_id}"
 
         self._http.delete(path)
+
+    # =========================================================================
+    # Registration Tokens (Agent Bootstrap)
+    # =========================================================================
+
+    def create_registration_token(
+        self,
+        managed_key_name: str,
+        *,
+        expires_in: str | None = None,
+        description: str | None = None,
+        tenant_id: str | None = None,
+    ) -> CreateRegistrationTokenResponse:
+        """
+        Create a registration token for agent bootstrapping.
+
+        Registration tokens are one-time use tokens that allow agents to
+        obtain their managed API key without prior authentication.
+
+        Args:
+            managed_key_name: The managed key to create a token for.
+            expires_in: Token expiration (e.g., "1h", "24h"). Min 1m, max 24h.
+            description: Optional description for audit trail.
+            tenant_id: Optional tenant ID (for cross-tenant access).
+
+        Returns:
+            The created token (shown only once - save it immediately!).
+        """
+        from urllib.parse import quote
+
+        data: dict[str, Any] = {}
+        if expires_in:
+            data["expiresIn"] = expires_in
+        if description:
+            data["description"] = description
+
+        path = f"/auth/api-keys/managed/{quote(managed_key_name, safe='')}/registration-tokens"
+        if tenant_id:
+            path = f"{path}?tenantId={tenant_id}"
+
+        response = self._http.post(path, data)
+        return CreateRegistrationTokenResponse.from_dict(response)
+
+    def list_registration_tokens(
+        self,
+        managed_key_name: str,
+        *,
+        include_used: bool = False,
+        tenant_id: str | None = None,
+    ) -> list[RegistrationToken]:
+        """
+        List registration tokens for a managed key.
+
+        Args:
+            managed_key_name: The managed key name.
+            include_used: Include tokens that have been used.
+            tenant_id: Optional tenant ID (for cross-tenant access).
+
+        Returns:
+            List of registration tokens.
+        """
+        from urllib.parse import quote, urlencode
+
+        params: dict[str, str] = {}
+        if include_used:
+            params["includeUsed"] = "true"
+        if tenant_id:
+            params["tenantId"] = tenant_id
+
+        path = f"/auth/api-keys/managed/{quote(managed_key_name, safe='')}/registration-tokens"
+        if params:
+            path = f"{path}?{urlencode(params)}"
+
+        response = self._http.get(path)
+        tokens = response.get("tokens", [])
+        return [RegistrationToken.from_dict(t) for t in tokens]
+
+    def revoke_registration_token(
+        self,
+        managed_key_name: str,
+        token_id: str,
+        tenant_id: str | None = None,
+    ) -> None:
+        """
+        Revoke a registration token.
+
+        Prevents the token from being used for bootstrapping.
+
+        Args:
+            managed_key_name: The managed key name.
+            token_id: The token ID to revoke.
+            tenant_id: Optional tenant ID (for cross-tenant access).
+        """
+        from urllib.parse import quote
+
+        path = f"/auth/api-keys/managed/{quote(managed_key_name, safe='')}/registration-tokens/{token_id}"
+        if tenant_id:
+            path = f"{path}?tenantId={tenant_id}"
+
+        self._http.delete(path)
+
+    def bootstrap(self, token: str) -> BootstrapResponse:
+        """
+        Bootstrap an agent using a registration token.
+
+        This is the unauthenticated endpoint used by agents to exchange a
+        one-time registration token for a managed API key binding.
+
+        Note: This method does not require prior authentication.
+
+        Args:
+            token: The registration token (format: zrt_...).
+
+        Returns:
+            The API key binding response.
+        """
+        response = self._http.post("/agent/bootstrap", {"token": token})
+        return BootstrapResponse.from_dict(response)
