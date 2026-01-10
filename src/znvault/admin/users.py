@@ -1,5 +1,5 @@
 # Path: zn-vault-sdk-python/src/znvault/admin/users.py
-"""Users admin client for ZN-Vault."""
+"""Users admin client for ZnVault."""
 
 from __future__ import annotations
 

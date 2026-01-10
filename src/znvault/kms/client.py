@@ -1,5 +1,5 @@
 # Path: zn-vault-sdk-python/src/znvault/kms/client.py
-"""KMS client for ZN-Vault."""
+"""KMS client for ZnVault."""
 
 from __future__ import annotations
 

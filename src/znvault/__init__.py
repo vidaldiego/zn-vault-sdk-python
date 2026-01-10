@@ -1,8 +1,8 @@
 # Path: zn-vault-sdk-python/src/znvault/__init__.py
 """
-ZN-Vault Python SDK
+ZnVault Python SDK
 
-A Python client library for ZN-Vault secrets management system.
+A Python client library for ZnVault secrets management system.
 """
 
 from znvault.client import ZnVaultClient

@@ -1,5 +1,5 @@
 # Path: zn-vault-sdk-python/src/znvault/exceptions/__init__.py
-"""ZN-Vault exception classes."""
+"""ZnVault exception classes."""
 
 from znvault.exceptions.errors import (
     ZnVaultError,

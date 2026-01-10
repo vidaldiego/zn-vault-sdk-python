@@ -1,5 +1,5 @@
 # Path: zn-vault-sdk-python/src/znvault/certificates/client.py
-"""Certificates client for ZN-Vault."""
+"""Certificates client for ZnVault."""
 
 from __future__ import annotations
 

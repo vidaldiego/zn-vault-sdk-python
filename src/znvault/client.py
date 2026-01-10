@@ -1,5 +1,5 @@
 # Path: zn-vault-sdk-python/src/znvault/client.py
-"""Main ZN-Vault client facade."""
+"""Main ZnVault client facade."""
 
 from znvault.config import ZnVaultConfig
 from znvault.http.client import HttpClient
@@ -18,10 +18,10 @@ from znvault.exceptions import ConfigurationError
 
 class ZnVaultClient:
     """
-    Main client for interacting with ZN-Vault.
+    Main client for interacting with ZnVault.
 
     This is the primary entry point for the SDK. It provides access to all
-    ZN-Vault operations through specialized client instances.
+    ZnVault operations through specialized client instances.
 
     Example:
         >>> client = ZnVaultClient.builder()
@@ -35,7 +35,7 @@ class ZnVaultClient:
 
     def __init__(self, config: ZnVaultConfig) -> None:
         """
-        Initialize the ZN-Vault client.
+        Initialize the ZnVault client.
 
         Args:
             config: The client configuration.

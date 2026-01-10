@@ -1,5 +1,5 @@
 # Path: zn-vault-sdk-python/src/znvault/admin/roles.py
-"""Roles admin client for ZN-Vault."""
+"""Roles admin client for ZnVault."""
 
 from __future__ import annotations
 

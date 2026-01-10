@@ -1,5 +1,5 @@
 # Path: zn-vault-sdk-python/src/znvault/admin/policies.py
-"""Policies admin client for ZN-Vault."""
+"""Policies admin client for ZnVault."""
 
 from __future__ import annotations
 

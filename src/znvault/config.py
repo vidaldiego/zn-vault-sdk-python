@@ -1,5 +1,5 @@
 # Path: zn-vault-sdk-python/src/znvault/config.py
-"""ZN-Vault client configuration."""
+"""ZnVault client configuration."""
 
 from dataclasses import dataclass, field
 from typing import Any
@@ -9,7 +9,7 @@ from znvault.exceptions import ConfigurationError
 
 @dataclass
 class ZnVaultConfig:
-    """Configuration for ZN-Vault client."""
+    """Configuration for ZnVault client."""
 
     base_url: str
     api_key: str | None = None

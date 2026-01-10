@@ -1,5 +1,5 @@
 # Path: zn-vault-sdk-python/src/znvault/audit/client.py
-"""Audit client for ZN-Vault."""
+"""Audit client for ZnVault."""
 
 from __future__ import annotations
 

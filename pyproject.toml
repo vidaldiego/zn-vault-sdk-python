@@ -7,11 +7,11 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "znvault"
 version = "1.7.0"
-description = "Python SDK for ZN-Vault secrets management"
+description = "Python SDK for ZnVault secrets management"
 readme = "README.md"
 license = {text = "Apache-2.0"}
 authors = [
-    {name = "ZincWare Team", email = "dev@zincware.io"}
+    {name = "ZincApp Team", email = "dev@zincapp.com"}
 ]
 keywords = ["secrets", "vault", "security", "kms", "encryption"]
 classifiers = [
@@ -48,10 +48,10 @@ async = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/zincware/zn-vault-sdk-python"
-Documentation = "https://github.com/zincware/zn-vault-sdk-python#readme"
-Repository = "https://github.com/zincware/zn-vault-sdk-python.git"
-Issues = "https://github.com/zincware/zn-vault-sdk-python/issues"
+Homepage = "https://github.com/vidaldiego/zn-vault-sdk-python"
+Documentation = "https://github.com/vidaldiego/zn-vault-sdk-python#readme"
+Repository = "https://github.com/vidaldiego/zn-vault-sdk-python.git"
+Issues = "https://github.com/vidaldiego/zn-vault-sdk-python/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]

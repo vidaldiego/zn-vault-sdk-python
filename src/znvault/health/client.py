@@ -1,5 +1,5 @@
 # Path: zn-vault-sdk-python/src/znvault/health/client.py
-"""Health client for ZN-Vault."""
+"""Health client for ZnVault."""
 
 from typing import TYPE_CHECKING
 

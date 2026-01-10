@@ -1,9 +1,9 @@
-# ZN-Vault Python SDK
+# ZnVault Python SDK
 
 [![PyPI version](https://badge.fury.io/py/znvault.svg)](https://pypi.org/project/znvault/)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 
-A Python client library for ZN-Vault secrets management system.
+A Python client library for ZnVault secrets management system.
 
 **PyPI:** https://pypi.org/project/znvault/
 
@@ -22,7 +22,7 @@ pip install znvault==1.0.0
 Or install from source:
 
 ```bash
-git clone https://github.com/zincware/zn-vault-sdk-python.git
+git clone https://github.com/vidaldiego/zn-vault-sdk-python.git
 cd zn-vault-sdk-python
 pip install -e .
 ```

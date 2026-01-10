@@ -1,11 +1,11 @@
 # Path: zn-vault-sdk-python/src/znvault/exceptions/errors.py
-"""ZN-Vault exception definitions."""
+"""ZnVault exception definitions."""
 
 from typing import Any
 
 
 class ZnVaultError(Exception):
-    """Base exception for all ZN-Vault errors."""
+    """Base exception for all ZnVault errors."""
 
     def __init__(
         self,

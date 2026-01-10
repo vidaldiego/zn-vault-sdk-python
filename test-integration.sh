@@ -1,6 +1,6 @@
 #!/bin/bash
 # Path: zn-vault-sdk-python/test-integration.sh
-# Integration tests for ZN-Vault Python SDK (API compatibility testing)
+# Integration tests for ZnVault Python SDK (API compatibility testing)
 
 BASE_URL="https://localhost:8443"
 CURL="curl -sk"
@@ -28,7 +28,7 @@ test_result() {
 
 echo ""
 echo "========================================"
-echo "ZN-Vault Python SDK Integration Tests"
+echo "ZnVault Python SDK Integration Tests"
 echo "========================================"
 echo ""
 

@@ -1,5 +1,5 @@
 # Path: zn-vault-sdk-python/src/znvault/admin/tenants.py
-"""Tenants admin client for ZN-Vault."""
+"""Tenants admin client for ZnVault."""
 
 from __future__ import annotations
 

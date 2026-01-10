@@ -25,7 +25,7 @@ T = TypeVar("T")
 
 
 class HttpClient:
-    """HTTP client for ZN-Vault API."""
+    """HTTP client for ZnVault API."""
 
     def __init__(self, config: ZnVaultConfig) -> None:
         """Initialize HTTP client with configuration."""

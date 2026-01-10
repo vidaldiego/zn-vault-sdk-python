@@ -1,5 +1,5 @@
 # Path: zn-vault-sdk-python/src/znvault/models/__init__.py
-"""ZN-Vault model classes."""
+"""ZnVault model classes."""
 
 from znvault.models.auth import (
     AuthResult,
