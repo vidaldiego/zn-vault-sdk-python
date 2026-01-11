@@ -11,6 +11,7 @@ from znvault.models.kms import (
     KeySpec,
     KeyUsage,
     KeyFilter,
+    KeyListResult,
     EncryptResult,
     DecryptResult,
     DataKeyResult,
@@ -54,7 +55,7 @@ class KmsClient:
         response = self._http.get(f"/v1/kms/keys/{key_id}")
         return KmsKey.from_dict(response)
 
-    def list_keys(self, filter: KeyFilter | None = None) -> list[KmsKey]:
+    def list_keys(self, filter: KeyFilter | None = None) -> KeyListResult:
         """
         List KMS keys matching the filter.
 
@@ -62,14 +63,11 @@ class KmsClient:
             filter: Optional filter parameters.
 
         Returns:
-            List of keys.
+            Paginated list of keys.
         """
         params = filter.to_params() if filter else {}
         response = self._http.get("/v1/kms/keys", params)
-
-        # API returns {keys: [...]}
-        keys = response.get("keys", []) if isinstance(response, dict) else response
-        return [KmsKey.from_dict(k) for k in keys]
+        return KeyListResult.from_dict(response)
 
     def encrypt(
         self,

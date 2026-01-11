@@ -334,14 +334,14 @@ class SecretFilter:
     expiring_before: datetime | None = None
     alias_prefix: str | None = None
     tags: list[str] | None = None
-    page: int = 1
-    page_size: int = 100
+    limit: int = 50
+    offset: int = 0
 
     def to_params(self) -> dict[str, Any]:
         """Convert to query parameters."""
         params: dict[str, Any] = {
-            "page": self.page,
-            "pageSize": self.page_size,
+            "limit": self.limit,
+            "offset": self.offset,
         }
         if self.type:
             params["type"] = self.type.value

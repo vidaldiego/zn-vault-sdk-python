@@ -132,7 +132,10 @@ class SecretsClient:
         # API returns array directly
         if isinstance(response, list):
             return [Secret.from_dict(s) for s in response]
-        # Or wrapped in data/secrets key
+        # New paginated format: { items: [], pagination: {} }
+        if "items" in response:
+            return [Secret.from_dict(s) for s in response.get("items", [])]
+        # Legacy: wrapped in data/secrets key
         items = response.get("data", response.get("secrets", []))
         return [Secret.from_dict(s) for s in items]
 
@@ -525,56 +528,56 @@ class SecretsClient:
         self,
         sub_type: SecretSubType,
         *,
-        page: int = 1,
-        page_size: int = 100,
+        limit: int = 50,
+        offset: int = 0,
     ) -> list[Secret]:
         """
         List secrets by sub-type.
 
         Args:
             sub_type: The sub-type to filter by.
-            page: Page number.
-            page_size: Page size.
+            limit: Maximum number of items to return.
+            offset: Number of items to skip.
 
         Returns:
             List of secrets.
         """
-        return self.list(SecretFilter(sub_type=sub_type, page=page, page_size=page_size))
+        return self.list(SecretFilter(sub_type=sub_type, limit=limit, offset=offset))
 
     def list_by_type(
         self,
         secret_type: SecretType,
         *,
-        page: int = 1,
-        page_size: int = 100,
+        limit: int = 50,
+        offset: int = 0,
     ) -> list[Secret]:
         """
         List secrets by type.
 
         Args:
             secret_type: The type to filter by.
-            page: Page number.
-            page_size: Page size.
+            limit: Maximum number of items to return.
+            offset: Number of items to skip.
 
         Returns:
             List of secrets.
         """
-        return self.list(SecretFilter(type=secret_type, page=page, page_size=page_size))
+        return self.list(SecretFilter(type=secret_type, limit=limit, offset=offset))
 
     def list_expiring_certificates(
         self,
         before_date: datetime,
         *,
-        page: int = 1,
-        page_size: int = 100,
+        limit: int = 50,
+        offset: int = 0,
     ) -> list[Secret]:
         """
         List certificates expiring before a specific date.
 
         Args:
             before_date: The cutoff date.
-            page: Page number.
-            page_size: Page size.
+            limit: Maximum number of items to return.
+            offset: Number of items to skip.
 
         Returns:
             List of expiring certificate secrets.
@@ -583,8 +586,8 @@ class SecretsClient:
             SecretFilter(
                 sub_type=SecretSubType.CERTIFICATE,
                 expiring_before=before_date,
-                page=page,
-                page_size=page_size,
+                limit=limit,
+                offset=offset,
             )
         )
 
@@ -592,16 +595,16 @@ class SecretsClient:
         self,
         before_date: datetime,
         *,
-        page: int = 1,
-        page_size: int = 100,
+        limit: int = 50,
+        offset: int = 0,
     ) -> list[Secret]:
         """
         List all expiring secrets (certificates, tokens) before a specific date.
 
         Args:
             before_date: The cutoff date.
-            page: Page number.
-            page_size: Page size.
+            limit: Maximum number of items to return.
+            offset: Number of items to skip.
 
         Returns:
             List of expiring secrets.
@@ -609,8 +612,8 @@ class SecretsClient:
         return self.list(
             SecretFilter(
                 expiring_before=before_date,
-                page=page,
-                page_size=page_size,
+                limit=limit,
+                offset=offset,
             )
         )
 
@@ -618,16 +621,16 @@ class SecretsClient:
         self,
         alias_prefix: str,
         *,
-        page: int = 1,
-        page_size: int = 100,
+        limit: int = 50,
+        offset: int = 0,
     ) -> list[Secret]:
         """
         List secrets by alias prefix (hierarchical path).
 
         Args:
             alias_prefix: The alias prefix to filter by.
-            page: Page number.
-            page_size: Page size.
+            limit: Maximum number of items to return.
+            offset: Number of items to skip.
 
         Returns:
             List of secrets matching the prefix.
@@ -635,8 +638,8 @@ class SecretsClient:
         return self.list(
             SecretFilter(
                 alias_prefix=alias_prefix,
-                page=page,
-                page_size=page_size,
+                limit=limit,
+                offset=offset,
             )
         )
 

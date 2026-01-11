@@ -189,9 +189,8 @@ class KeyFilter:
     tenant: str | None = None
     state: KeyState | None = None
     usage: KeyUsage | None = None
-    limit: int = 100
+    limit: int = 50
     offset: int = 0
-    marker: str | None = None
 
     def to_params(self) -> dict[str, Any]:
         """Convert to query parameters."""
@@ -205,9 +204,31 @@ class KeyFilter:
             params["state"] = self.state.value
         if self.usage:
             params["usage"] = self.usage.value
-        if self.marker:
-            params["marker"] = self.marker
         return params
+
+
+@dataclass
+class KeyListResult:
+    """Result of listing KMS keys."""
+
+    items: list[KmsKey]
+    total: int
+    limit: int
+    offset: int
+    has_more: bool
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "KeyListResult":
+        """Create from API response dictionary."""
+        pagination = data.get("pagination", {})
+        items = [KmsKey.from_dict(k) for k in data.get("items", [])]
+        return cls(
+            items=items,
+            total=pagination.get("total", len(items)),
+            limit=pagination.get("limit", 50),
+            offset=pagination.get("offset", 0),
+            has_more=pagination.get("hasMore", False),
+        )
 
 
 def _parse_datetime(value: str | None) -> datetime | None:
