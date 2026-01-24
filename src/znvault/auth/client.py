@@ -226,7 +226,8 @@ class AuthClient:
             List of API keys.
         """
         response = self._http.get("/auth/api-keys")
-        keys = response if isinstance(response, list) else response.get("keys", [])
+        # API returns {items: [...], expiringSoon: [...], pagination: {...}}
+        keys = response.get("items", []) if isinstance(response, dict) else response
         return [ApiKey.from_dict(k) for k in keys]
 
     def revoke_api_key(self, key_id: str) -> None:
@@ -384,7 +385,8 @@ class AuthClient:
             path = f"/auth/api-keys/managed?tenantId={tenant_id}"
 
         response = self._http.get(path)
-        keys = response.get("keys", [])
+        # API returns {items: [...], pagination: {...}}
+        keys = response.get("items", [])
         return [ManagedApiKey.from_dict(k) for k in keys]
 
     def get_managed_api_key(
