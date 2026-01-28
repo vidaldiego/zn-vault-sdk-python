@@ -152,13 +152,13 @@ class TestSecretModels:
         filter = SecretFilter(
             type=SecretType.CREDENTIAL,
             tags=["test"],
-            page_size=50,
+            limit=50,
         )
         params = filter.to_params()
 
         assert params["type"] == "credential"
         assert params["tags"] == "test"
-        assert params["pageSize"] == 50
+        assert params["limit"] == 50
 
 
 class TestKmsModels:

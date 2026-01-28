@@ -103,7 +103,7 @@ class TestAuthClientApiKeys:
     def test_list_api_keys(self, auth_client, mock_http):
         """Test listing API keys."""
         mock_http.get.return_value = {
-            "keys": [
+            "items": [
                 {"id": "key-1", "name": "key1", "prefix": "znv_a"},
                 {"id": "key-2", "name": "key2", "prefix": "znv_b"},
             ]
