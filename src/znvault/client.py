@@ -8,7 +8,6 @@ from znvault.secrets.client import SecretsClient
 from znvault.kms.client import KmsClient
 from znvault.certificates.client import CertificatesClient
 from znvault.admin.users import UsersClient
-from znvault.admin.tenants import TenantsClient
 from znvault.admin.roles import RolesClient
 from znvault.admin.policies import PoliciesClient
 from znvault.audit.client import AuditClient
@@ -49,7 +48,6 @@ class ZnVaultClient:
         self._kms = KmsClient(self._http)
         self._certificates = CertificatesClient(self._http)
         self._users = UsersClient(self._http)
-        self._tenants = TenantsClient(self._http)
         self._roles = RolesClient(self._http)
         self._policies = PoliciesClient(self._http)
         self._audit = AuditClient(self._http)
@@ -106,11 +104,6 @@ class ZnVaultClient:
     def users(self) -> UsersClient:
         """Get the users management client."""
         return self._users
-
-    @property
-    def tenants(self) -> TenantsClient:
-        """Get the tenants management client."""
-        return self._tenants
 
     @property
     def roles(self) -> RolesClient:

@@ -6,6 +6,7 @@ A Python client library for ZnVault secrets management system.
 """
 
 from znvault.client import ZnVaultClient
+from znvault.superadmin import ZnVaultSuperadminClient, SuperadminAuthClient
 from znvault.config import ZnVaultConfig
 from znvault.exceptions import (
     ZnVaultError,
@@ -72,6 +73,8 @@ __version__ = "1.0.0"
 __all__ = [
     # Client
     "ZnVaultClient",
+    "ZnVaultSuperadminClient",
+    "SuperadminAuthClient",
     "ZnVaultConfig",
     # Exceptions
     "ZnVaultError",

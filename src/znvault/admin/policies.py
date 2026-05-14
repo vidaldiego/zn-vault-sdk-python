@@ -23,17 +23,15 @@ class PoliciesClient:
         name: str,
         document: PolicyDocument,
         description: str | None = None,
-        tenant_id: str | None = None,
         priority: int = 0,
     ) -> Policy:
         """
-        Create a new policy.
+        Create a new policy in the caller's tenant.
 
         Args:
             name: The policy name.
             document: The policy document.
             description: Optional description.
-            tenant_id: Optional tenant ID.
             priority: Policy priority (higher = evaluated first).
 
         Returns:
@@ -46,8 +44,6 @@ class PoliciesClient:
         }
         if description:
             data["description"] = description
-        if tenant_id:
-            data["tenantId"] = tenant_id
 
         response = self._http.post("/v1/policies", data)
         return Policy.from_dict(response)
@@ -67,16 +63,14 @@ class PoliciesClient:
 
     def list(
         self,
-        tenant_id: str | None = None,
         enabled: bool | None = None,
         limit: int = 100,
         offset: int = 0,
     ) -> list[Policy]:
         """
-        List policies.
+        List policies in the caller's tenant.
 
         Args:
-            tenant_id: Optional tenant ID filter.
             enabled: Optional enabled filter.
             limit: Maximum number of policies to return.
             offset: Offset for pagination.
@@ -85,8 +79,6 @@ class PoliciesClient:
             List of policies.
         """
         params: dict[str, Any] = {"limit": limit, "offset": offset}
-        if tenant_id:
-            params["tenantId"] = tenant_id
         if enabled is not None:
             params["enabled"] = enabled
 

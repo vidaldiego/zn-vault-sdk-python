@@ -46,16 +46,14 @@ class RolesClient:
 
     def list(
         self,
-        tenant_id: str | None = None,
         include_system: bool = False,
         limit: int = 100,
         offset: int = 0,
     ) -> list[Role]:
         """
-        List roles.
+        List roles in the caller's tenant.
 
         Args:
-            tenant_id: Optional tenant ID filter.
             include_system: Include system roles.
             limit: Maximum number of roles to return.
             offset: Offset for pagination.
@@ -68,8 +66,6 @@ class RolesClient:
             "offset": offset,
             "includeSystem": "true" if include_system else "false",
         }
-        if tenant_id:
-            params["tenantId"] = tenant_id
 
         response = self._http.get("/v1/roles", params)
 

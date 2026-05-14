@@ -47,15 +47,13 @@ class UsersClient:
 
     def list(
         self,
-        tenant_id: str | None = None,
         limit: int = 100,
         offset: int = 0,
     ) -> list[User]:
         """
-        List users.
+        List users in the caller's tenant.
 
         Args:
-            tenant_id: Optional tenant ID filter.
             limit: Maximum number of users to return.
             offset: Offset for pagination.
 
@@ -63,8 +61,6 @@ class UsersClient:
             List of users.
         """
         params: dict[str, Any] = {"limit": limit, "offset": offset}
-        if tenant_id:
-            params["tenantId"] = tenant_id
 
         response = self._http.get("/v1/users", params)
 
@@ -77,7 +73,6 @@ class UsersClient:
         user_id: str,
         email: str | None = None,
         role: str | None = None,
-        tenant_id: str | None = None,
     ) -> User:
         """
         Update a user.
@@ -86,7 +81,6 @@ class UsersClient:
             user_id: The user ID to update.
             email: New email address.
             role: New role.
-            tenant_id: New tenant ID.
 
         Returns:
             The updated user.
@@ -96,8 +90,6 @@ class UsersClient:
             data["email"] = email
         if role:
             data["role"] = role
-        if tenant_id:
-            data["tenantId"] = tenant_id
 
         response = self._http.put(f"/v1/users/{user_id}", data)
         return User.from_dict(response.get("user", response))

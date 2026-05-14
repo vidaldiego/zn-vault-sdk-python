@@ -179,13 +179,14 @@ class Policy:
 
 @dataclass
 class CreateUserRequest:
-    """Request to create a user."""
+    """Request to create a user. Tenant is derived from the authenticated
+    principal by the server. For cross-tenant user creation use
+    ZnVaultSuperadminClient."""
 
     username: str
     password: str
     email: str | None = None
     role: str | None = None
-    tenant_id: str | None = None
     permissions: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
@@ -198,8 +199,6 @@ class CreateUserRequest:
             result["email"] = self.email
         if self.role:
             result["role"] = self.role
-        if self.tenant_id:
-            result["tenantId"] = self.tenant_id
         if self.permissions:
             result["permissions"] = self.permissions
         return result
@@ -228,12 +227,12 @@ class CreateTenantRequest:
 
 @dataclass
 class CreateRoleRequest:
-    """Request to create a role."""
+    """Request to create a role. Tenant is derived from the authenticated
+    principal by the server."""
 
     name: str
     description: str | None = None
     permissions: list[str] = field(default_factory=list)
-    tenant_id: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to API request dictionary."""
@@ -243,8 +242,6 @@ class CreateRoleRequest:
         }
         if self.description:
             result["description"] = self.description
-        if self.tenant_id:
-            result["tenantId"] = self.tenant_id
         return result
 
 

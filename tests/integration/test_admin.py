@@ -11,10 +11,13 @@ class TestUsersIntegration:
     """Integration tests for user management functionality."""
 
     @pytest.fixture(autouse=True)
-    def setup_cleanup(self, superadmin_client):
-        """Setup and cleanup for each test."""
+    def setup_cleanup(self, tenant_admin_client):
+        """Setup and cleanup for each test.
+
+        /v1/users is tenant-scoped; superadmins are rejected. Use tenant admin.
+        """
         self.created_user_ids = []
-        self.client = superadmin_client
+        self.client = tenant_admin_client
         yield
         # Cleanup created users
         for user_id in self.created_user_ids:
@@ -39,7 +42,6 @@ class TestUsersIntegration:
                 username=username,
                 password="TestPassword123#",
                 email=f"{username}@example.com",
-                tenant_id=TestConfig.DEFAULT_TENANT,
                 role="user",
             )
         )
@@ -61,7 +63,6 @@ class TestUsersIntegration:
             CreateUserRequest(
                 username=username,
                 password="TestPassword123#",
-                tenant_id=TestConfig.DEFAULT_TENANT,
             )
         )
 
@@ -84,7 +85,6 @@ class TestUsersIntegration:
             CreateUserRequest(
                 username=username,
                 password="TestPassword123#",
-                tenant_id=TestConfig.DEFAULT_TENANT,
             )
         )
 
@@ -96,39 +96,47 @@ class TestUsersIntegration:
 
 @pytest.mark.integration
 class TestTenantsIntegration:
-    """Integration tests for tenant management functionality."""
+    """Integration tests for tenant management functionality.
 
-    def test_list_tenants(self, superadmin_client):
+    Tenant CRUD is superadmin-only and lives on ZnVaultSuperadminClient.
+    """
+
+    def test_list_tenants(self, superadmin_admin_client):
         """Test listing tenants."""
-        tenants = superadmin_client.tenants.list()
+        tenants = superadmin_admin_client.tenants.list()
         assert tenants is not None
         print(f"✓ Listed {len(tenants)} tenants")
 
-    def test_get_tenant(self, superadmin_client):
+    def test_get_tenant(self, superadmin_admin_client):
         """Test getting tenant by ID."""
-        # Get default tenant
-        tenant = superadmin_client.tenants.get(TestConfig.DEFAULT_TENANT)
+        tenant = superadmin_admin_client.tenants.get(TestConfig.DEFAULT_TENANT)
         assert tenant.id == TestConfig.DEFAULT_TENANT
         print(f"✓ Retrieved tenant: {tenant.id}")
 
 
 @pytest.mark.integration
 class TestRolesIntegration:
-    """Integration tests for role management functionality."""
+    """Integration tests for role management functionality.
 
-    def test_list_roles(self, superadmin_client):
+    /v1/roles is tenant-scoped; use tenant admin.
+    """
+
+    def test_list_roles(self, tenant_admin_client):
         """Test listing roles."""
-        roles = superadmin_client.roles.list()
+        roles = tenant_admin_client.roles.list()
         assert roles is not None
         print(f"✓ Listed {len(roles)} roles")
 
 
 @pytest.mark.integration
 class TestPoliciesIntegration:
-    """Integration tests for policy management functionality."""
+    """Integration tests for policy management functionality.
 
-    def test_list_policies(self, superadmin_client):
+    /v1/policies is tenant-scoped; use tenant admin.
+    """
+
+    def test_list_policies(self, tenant_admin_client):
         """Test listing policies."""
-        policies = superadmin_client.policies.list()
+        policies = tenant_admin_client.policies.list()
         assert policies is not None
         print(f"✓ Listed {len(policies)} policies")

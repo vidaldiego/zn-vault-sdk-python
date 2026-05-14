@@ -168,11 +168,13 @@ class AuthClient:
         expires_in_days: int | None = None,
         ip_allowlist: list[str] | None = None,
         conditions: ApiKeyConditions | None = None,
-        tenant_id: str | None = None,
         description: str | None = None,
     ) -> ApiKey:
         """
-        Create a new API key.
+        Create a new API key in the caller's tenant.
+
+        Tenant is derived server-side from the authenticated principal. For
+        cross-tenant API key creation, use ZnVaultSuperadminClient.
 
         Args:
             name: Name for the API key.
@@ -180,7 +182,6 @@ class AuthClient:
             expires_in_days: Optional expiration in days.
             ip_allowlist: Optional list of allowed IPs/CIDRs.
             conditions: Optional inline ABAC conditions.
-            tenant_id: Required for superadmin creating tenant-scoped keys.
             description: Optional description.
 
         Returns:
@@ -210,12 +211,7 @@ class AuthClient:
                 api_conditions["resourceTags"] = conditions["resource_tags"]
             data["conditions"] = api_conditions
 
-        # Tenant ID is passed as query parameter
-        path = "/auth/api-keys"
-        if tenant_id:
-            path = f"/auth/api-keys?tenantId={tenant_id}"
-
-        response = self._http.post(path, data)
+        response = self._http.post("/auth/api-keys", data)
         return ApiKey.from_dict(response)
 
     def list_api_keys(self) -> list[ApiKey]:
@@ -311,6 +307,10 @@ class AuthClient:
     # =========================================================================
     # Managed API Keys
     # =========================================================================
+    #
+    # All managed-key and registration-token methods are scoped to the
+    # caller's tenant. For cross-tenant management, use ZnVaultSuperadminClient
+    # (server route /v1/superadmin/api-keys/* — not yet implemented).
 
     def create_managed_api_key(
         self,
@@ -322,29 +322,8 @@ class AuthClient:
         grace_period: str | None = None,
         description: str | None = None,
         expires_in_days: int | None = None,
-        tenant_id: str | None = None,
     ) -> ManagedApiKey:
-        """
-        Create a managed API key with auto-rotation configuration.
-
-        Managed keys automatically rotate based on the configured mode:
-        - scheduled: Rotates at fixed intervals (requires rotation_interval)
-        - on-use: Rotates after being used (TTL resets on each use)
-        - on-bind: Rotates each time bind is called
-
-        Args:
-            name: Unique name for the managed key.
-            permissions: List of permissions for the key.
-            rotation_mode: Rotation mode (scheduled, on-use, on-bind).
-            rotation_interval: Interval for scheduled rotation (e.g., "24h", "7d").
-            grace_period: Grace period for smooth transitions (e.g., "5m").
-            description: Optional description.
-            expires_in_days: Optional expiration in days.
-            tenant_id: Required for superadmin creating tenant-scoped keys.
-
-        Returns:
-            The created managed key metadata (use bind to get the key value).
-        """
+        """Create a managed API key with auto-rotation in the caller's tenant."""
         data: dict[str, Any] = {
             "name": name,
             "permissions": permissions,
@@ -359,117 +338,41 @@ class AuthClient:
         if expires_in_days is not None:
             data["expiresInDays"] = expires_in_days
 
-        path = "/auth/api-keys/managed"
-        if tenant_id:
-            path = f"/auth/api-keys/managed?tenantId={tenant_id}"
-
-        response = self._http.post(path, data)
+        response = self._http.post("/auth/api-keys/managed", data)
         api_key_data = response.get("apiKey", response)
         return ManagedApiKey.from_dict(api_key_data)
 
-    def list_managed_api_keys(
-        self,
-        tenant_id: str | None = None,
-    ) -> list[ManagedApiKey]:
-        """
-        List managed API keys.
-
-        Args:
-            tenant_id: Optional tenant ID filter (for superadmin).
-
-        Returns:
-            List of managed keys.
-        """
-        path = "/auth/api-keys/managed"
-        if tenant_id:
-            path = f"/auth/api-keys/managed?tenantId={tenant_id}"
-
-        response = self._http.get(path)
-        # API returns {items: [...], pagination: {...}}
+    def list_managed_api_keys(self) -> list[ManagedApiKey]:
+        """List managed API keys in the caller's tenant."""
+        response = self._http.get("/auth/api-keys/managed")
         keys = response.get("items", [])
         return [ManagedApiKey.from_dict(k) for k in keys]
 
-    def get_managed_api_key(
-        self,
-        name: str,
-        tenant_id: str | None = None,
-    ) -> ManagedApiKey:
-        """
-        Get a managed API key by name.
-
-        Args:
-            name: The managed key name.
-            tenant_id: Optional tenant ID (for cross-tenant access).
-
-        Returns:
-            The managed key metadata.
-        """
+    def get_managed_api_key(self, name: str) -> ManagedApiKey:
+        """Get a managed API key by name in the caller's tenant."""
         from urllib.parse import quote
-
-        path = f"/auth/api-keys/managed/{quote(name, safe='')}"
-        if tenant_id:
-            path = f"{path}?tenantId={tenant_id}"
-
-        response = self._http.get(path)
+        response = self._http.get(f"/auth/api-keys/managed/{quote(name, safe='')}")
         return ManagedApiKey.from_dict(response)
 
-    def bind_managed_api_key(
-        self,
-        name: str,
-        tenant_id: str | None = None,
-    ) -> ManagedKeyBindResponse:
-        """
-        Bind to a managed API key to get the current key value.
+    def bind_managed_api_key(self, name: str) -> ManagedKeyBindResponse:
+        """Bind to a managed API key to get the current key value.
 
         This is the primary method for agents to obtain their API key.
-        The response includes rotation metadata to help determine when
-        to re-bind for a new key.
-
-        Security: This endpoint requires the caller to already have a valid
-        API key (the current one, even during grace period). This prevents
-        unauthorized access to managed keys.
-
-        Args:
-            name: The managed key name.
-            tenant_id: Optional tenant ID (for cross-tenant access).
-
-        Returns:
-            The current key value and rotation metadata.
+        Security: requires the caller to already have a valid API key
+        (the current one, even during grace period).
         """
         from urllib.parse import quote
-
-        path = f"/auth/api-keys/managed/{quote(name, safe='')}/bind"
-        if tenant_id:
-            path = f"{path}?tenantId={tenant_id}"
-
-        response = self._http.post(path, {})
+        response = self._http.post(f"/auth/api-keys/managed/{quote(name, safe='')}/bind", {})
         return ManagedKeyBindResponse.from_dict(response)
 
-    def rotate_managed_api_key(
-        self,
-        name: str,
-        tenant_id: str | None = None,
-    ) -> ManagedKeyRotateResponse:
-        """
-        Force rotate a managed API key.
+    def rotate_managed_api_key(self, name: str) -> ManagedKeyRotateResponse:
+        """Force rotate a managed API key.
 
         Creates a new key immediately, regardless of the rotation schedule.
         The old key remains valid during the grace period.
-
-        Args:
-            name: The managed key name.
-            tenant_id: Optional tenant ID (for cross-tenant access).
-
-        Returns:
-            The new key value and rotation info.
         """
         from urllib.parse import quote
-
-        path = f"/auth/api-keys/managed/{quote(name, safe='')}/rotate"
-        if tenant_id:
-            path = f"{path}?tenantId={tenant_id}"
-
-        response = self._http.post(path, {})
+        response = self._http.post(f"/auth/api-keys/managed/{quote(name, safe='')}/rotate", {})
         return ManagedKeyRotateResponse.from_dict(response)
 
     def update_managed_api_key_config(
@@ -479,23 +382,9 @@ class AuthClient:
         rotation_interval: str | None = None,
         grace_period: str | None = None,
         enabled: bool | None = None,
-        tenant_id: str | None = None,
     ) -> ManagedApiKey:
-        """
-        Update managed API key configuration.
-
-        Args:
-            name: The managed key name.
-            rotation_interval: New rotation interval.
-            grace_period: New grace period.
-            enabled: Enable/disable the key.
-            tenant_id: Optional tenant ID (for cross-tenant access).
-
-        Returns:
-            Updated managed key metadata.
-        """
+        """Update managed API key configuration."""
         from urllib.parse import quote
-
         data: dict[str, Any] = {}
         if rotation_interval is not None:
             data["rotationInterval"] = rotation_interval
@@ -503,33 +392,13 @@ class AuthClient:
             data["gracePeriod"] = grace_period
         if enabled is not None:
             data["enabled"] = enabled
-
-        path = f"/auth/api-keys/managed/{quote(name, safe='')}/config"
-        if tenant_id:
-            path = f"{path}?tenantId={tenant_id}"
-
-        response = self._http.patch(path, data)
+        response = self._http.patch(f"/auth/api-keys/managed/{quote(name, safe='')}/config", data)
         return ManagedApiKey.from_dict(response)
 
-    def delete_managed_api_key(
-        self,
-        name: str,
-        tenant_id: str | None = None,
-    ) -> None:
-        """
-        Delete a managed API key.
-
-        Args:
-            name: The managed key name.
-            tenant_id: Optional tenant ID (for cross-tenant access).
-        """
+    def delete_managed_api_key(self, name: str) -> None:
+        """Delete a managed API key."""
         from urllib.parse import quote
-
-        path = f"/auth/api-keys/managed/{quote(name, safe='')}"
-        if tenant_id:
-            path = f"{path}?tenantId={tenant_id}"
-
-        self._http.delete(path)
+        self._http.delete(f"/auth/api-keys/managed/{quote(name, safe='')}")
 
     # =========================================================================
     # Registration Tokens (Agent Bootstrap)
@@ -541,36 +410,22 @@ class AuthClient:
         *,
         expires_in: str | None = None,
         description: str | None = None,
-        tenant_id: str | None = None,
     ) -> CreateRegistrationTokenResponse:
-        """
-        Create a registration token for agent bootstrapping.
+        """Create a registration token for agent bootstrapping.
 
         Registration tokens are one-time use tokens that allow agents to
         obtain their managed API key without prior authentication.
-
-        Args:
-            managed_key_name: The managed key to create a token for.
-            expires_in: Token expiration (e.g., "1h", "24h"). Min 1m, max 24h.
-            description: Optional description for audit trail.
-            tenant_id: Optional tenant ID (for cross-tenant access).
-
-        Returns:
-            The created token (shown only once - save it immediately!).
         """
         from urllib.parse import quote
-
         data: dict[str, Any] = {}
         if expires_in:
             data["expiresIn"] = expires_in
         if description:
             data["description"] = description
-
-        path = f"/auth/api-keys/managed/{quote(managed_key_name, safe='')}/registration-tokens"
-        if tenant_id:
-            path = f"{path}?tenantId={tenant_id}"
-
-        response = self._http.post(path, data)
+        response = self._http.post(
+            f"/auth/api-keys/managed/{quote(managed_key_name, safe='')}/registration-tokens",
+            data,
+        )
         return CreateRegistrationTokenResponse.from_dict(response)
 
     def list_registration_tokens(
@@ -578,31 +433,12 @@ class AuthClient:
         managed_key_name: str,
         *,
         include_used: bool = False,
-        tenant_id: str | None = None,
     ) -> list[RegistrationToken]:
-        """
-        List registration tokens for a managed key.
-
-        Args:
-            managed_key_name: The managed key name.
-            include_used: Include tokens that have been used.
-            tenant_id: Optional tenant ID (for cross-tenant access).
-
-        Returns:
-            List of registration tokens.
-        """
-        from urllib.parse import quote, urlencode
-
-        params: dict[str, str] = {}
-        if include_used:
-            params["includeUsed"] = "true"
-        if tenant_id:
-            params["tenantId"] = tenant_id
-
+        """List registration tokens for a managed key."""
+        from urllib.parse import quote
         path = f"/auth/api-keys/managed/{quote(managed_key_name, safe='')}/registration-tokens"
-        if params:
-            path = f"{path}?{urlencode(params)}"
-
+        if include_used:
+            path = f"{path}?includeUsed=true"
         response = self._http.get(path)
         tokens = response.get("tokens", [])
         return [RegistrationToken.from_dict(t) for t in tokens]
@@ -611,25 +447,12 @@ class AuthClient:
         self,
         managed_key_name: str,
         token_id: str,
-        tenant_id: str | None = None,
     ) -> None:
-        """
-        Revoke a registration token.
-
-        Prevents the token from being used for bootstrapping.
-
-        Args:
-            managed_key_name: The managed key name.
-            token_id: The token ID to revoke.
-            tenant_id: Optional tenant ID (for cross-tenant access).
-        """
+        """Revoke a registration token."""
         from urllib.parse import quote
-
-        path = f"/auth/api-keys/managed/{quote(managed_key_name, safe='')}/registration-tokens/{token_id}"
-        if tenant_id:
-            path = f"{path}?tenantId={tenant_id}"
-
-        self._http.delete(path)
+        self._http.delete(
+            f"/auth/api-keys/managed/{quote(managed_key_name, safe='')}/registration-tokens/{token_id}"
+        )
 
     def bootstrap(self, token: str) -> BootstrapResponse:
         """

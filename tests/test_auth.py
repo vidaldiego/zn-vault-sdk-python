@@ -48,8 +48,12 @@ class TestAuthClientApiKeys:
             {"name": "test-key", "permissions": ["secret:read:metadata"], "expiresInDays": 90},
         )
 
-    def test_create_api_key_with_tenant(self, auth_client, mock_http):
-        """Test creating an API key with tenant ID."""
+    def test_create_api_key_returns_response_tenant(self, auth_client, mock_http):
+        """Test creating an API key — server returns tenant in response.
+
+        Note: client-supplied tenant_id has been removed from create_api_key;
+        the server derives tenant from the authenticated principal.
+        """
         mock_http.post.return_value = {
             "id": "key-456",
             "name": "tenant-key",
@@ -62,13 +66,12 @@ class TestAuthClientApiKeys:
         result = auth_client.create_api_key(
             "tenant-key",
             permissions=["secret:read:metadata"],
-            tenant_id="acme",
         )
 
         assert result.id == "key-456"
         assert result.tenant_id == "acme"
         mock_http.post.assert_called_once_with(
-            "/auth/api-keys?tenantId=acme",
+            "/auth/api-keys",
             {"name": "tenant-key", "permissions": ["secret:read:metadata"]},
         )
 

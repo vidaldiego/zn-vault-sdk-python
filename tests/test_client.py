@@ -48,7 +48,7 @@ class TestZnVaultClient:
         assert client.secrets is not None
         assert client.kms is not None
         assert client.users is not None
-        assert client.tenants is not None
+        # client.tenants no longer exists — moved to ZnVaultSuperadminClient
         assert client.roles is not None
         assert client.policies is not None
         assert client.audit is not None

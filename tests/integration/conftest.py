@@ -65,8 +65,10 @@ class TestConfig:
         CERT_USER_USERNAME = os.environ.get("ZNVAULT_CERT_USER_USERNAME", f"{_tenant}/sdk-cert-user")
         CERT_USER_PASSWORD = os.environ.get("ZNVAULT_CERT_USER_PASSWORD", STANDARD_PASSWORD)
 
-        # Second tenant admin (for isolation testing)
-        TENANT2_ADMIN_USERNAME = os.environ.get("ZNVAULT_TENANT2_ADMIN_USERNAME", "sdk-test-2/sdk-admin")
+        # Second tenant admin (for isolation testing). Username is sdk-admin2
+        # because the server's superadmin user-create requires globally-unique
+        # usernames; sdk-admin is taken by the first tenant.
+        TENANT2_ADMIN_USERNAME = os.environ.get("ZNVAULT_TENANT2_ADMIN_USERNAME", "sdk-test-2/sdk-admin2")
         TENANT2_ADMIN_PASSWORD = os.environ.get("ZNVAULT_TENANT2_ADMIN_PASSWORD", STANDARD_PASSWORD)
 
     # Pre-created API keys (created by sdk-test-init.js)
@@ -95,10 +97,39 @@ class TestConfig:
 
     @classmethod
     def create_superadmin_client(cls) -> ZnVaultClient:
-        """Create an authenticated client as superadmin."""
+        """Create a tenant-scoped client logged in as superadmin.
+
+        Note: superadmins are rejected on tenant-scoped routes. For tenant
+        CRUD use :meth:`create_superadmin_admin_client` instead.
+        """
         client = cls.create_test_client()
         client.auth.login(cls.Users.SUPERADMIN_USERNAME, cls.Users.SUPERADMIN_PASSWORD)
         return client
+
+    @classmethod
+    def create_superadmin_admin_client(cls):
+        """Create an authenticated ZnVaultSuperadminClient.
+
+        Use for tenant CRUD and other cross-tenant superadmin operations.
+        """
+        from znvault import ZnVaultSuperadminClient
+        base_url = os.environ.get("ZNVAULT_BASE_URL", cls.BASE_URL)
+        admin = (
+            ZnVaultSuperadminClient.builder()
+            .base_url(base_url)
+            .trust_self_signed(True)
+            .verify_ssl(False)
+            .build()
+        )
+        # Login via the tenant-scoped client and copy tokens over to the
+        # superadmin client's underlying HttpClient.
+        tenant_client = cls.create_test_client()
+        tenant_client.auth.login(cls.Users.SUPERADMIN_USERNAME, cls.Users.SUPERADMIN_PASSWORD)
+        admin._http.set_tokens(
+            tenant_client._http.access_token,
+            tenant_client._http.refresh_token,
+        )
+        return admin
 
     @classmethod
     def create_tenant_admin_client(cls) -> ZnVaultClient:
@@ -184,10 +215,18 @@ def unauthenticated_client():
 
 @pytest.fixture
 def superadmin_client():
-    """Create an authenticated superadmin client."""
+    """Create an authenticated superadmin client (tenant-scoped routes)."""
     if not integration_tests_enabled():
         pytest.skip("Integration tests require ZNVAULT_BASE_URL environment variable")
     return TestConfig.create_superadmin_client()
+
+
+@pytest.fixture
+def superadmin_admin_client():
+    """Create an authenticated ZnVaultSuperadminClient (cross-tenant operations)."""
+    if not integration_tests_enabled():
+        pytest.skip("Integration tests require ZNVAULT_BASE_URL environment variable")
+    return TestConfig.create_superadmin_admin_client()
 
 
 @pytest.fixture

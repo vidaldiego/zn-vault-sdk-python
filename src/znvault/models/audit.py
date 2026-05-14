@@ -54,7 +54,6 @@ class AuditFilter:
     actor: str | None = None
     resource_type: str | None = None
     resource_id: str | None = None
-    tenant_id: str | None = None
     result: str | None = None
     start_date: datetime | None = None
     end_date: datetime | None = None
@@ -75,8 +74,6 @@ class AuditFilter:
             params["resourceType"] = self.resource_type
         if self.resource_id:
             params["resourceId"] = self.resource_id
-        if self.tenant_id:
-            params["tenantId"] = self.tenant_id
         if self.result:
             params["result"] = self.result
         if self.start_date:
