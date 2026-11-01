@@ -55,7 +55,7 @@ class AuditClient:
         Returns:
             The verification result.
         """
-        response = self._http.get("/v1/audit/verify")
+        response = self._http.get("/v1/superadmin/audit/verify")
         return AuditVerifyResult.from_dict(response)
 
     def export(

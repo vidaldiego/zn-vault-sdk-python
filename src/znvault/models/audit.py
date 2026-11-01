@@ -92,16 +92,25 @@ class AuditVerifyResult:
     first_entry_id: str | None = None
     last_entry_id: str | None = None
     error: str | None = None
+    status: str = "unverifiable"
+    evidence: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "AuditVerifyResult":
         """Create from API response dictionary."""
         return cls(
-            valid=data.get("valid", False),
-            entries_verified=data.get("entriesVerified", data.get("count", 0)),
-            first_entry_id=data.get("firstEntryId"),
-            last_entry_id=data.get("lastEntryId"),
+            valid=(data.get("valid") is True and data.get("status") == "verified"
+                   and data.get("scope") == "retained" and data.get("completed") is True
+                   and data.get("readEntries", 0) > 0
+                   and data.get("authenticatedEntries") == data.get("readEntries")
+                   and data.get("unverifiedEntries") == 0
+                   and data.get("unsignedDetailsEntries") == 0),
+            entries_verified=data.get("authenticatedEntries", data.get("checkedEntries", 0)),
+            first_entry_id=data.get("interval", {}).get("firstId"),
+            last_entry_id=data.get("interval", {}).get("lastId"),
             error=data.get("error"),
+            status=data.get("status", "unverifiable"),
+            evidence=dict(data),
         )
 
 
