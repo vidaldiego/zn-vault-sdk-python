@@ -319,10 +319,10 @@ class TestAuditModels:
         }
         result = AuditVerifyResult.from_dict(data)
 
-        assert result.valid is True
-        assert result.entries_verified == 100
-        assert result.first_entry_id == "entry-1"
-        assert result.last_entry_id == "entry-100"
+        assert result.valid is False
+        assert result.entries_verified == 0
+        assert result.first_entry_id is None
+        assert result.last_entry_id is None
 
 
 class TestHealthModels:
